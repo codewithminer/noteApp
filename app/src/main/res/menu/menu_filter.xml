@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:gravity="end"
+    android:layoutDirection="rtl"
+    android:textDirection="anyRtl"
+    android:layout_gravity="end">
+
+    <item
+        android:id="@+id/sortByDateLatest"
+        android:title="تاریخ ایجاد(جدیدترین)"
+        android:gravity="end"
+        android:layout_gravity="end"/>
+
+<!--    <item-->
+<!--        android:id="@+id/sortByDateOldest"-->
+<!--        android:title="تاریخ ایجاد(قدیمی‌ترین)"-->
+<!--        android:gravity="end"-->
+<!--        android:layout_gravity="end"/>-->
+
+    <item
+        android:id="@+id/sortByColor"
+        android:title="مرتب کردن بر اساس رنگ  "
+        android:gravity="end"
+        android:layout_gravity="end"/>
+
+</menu>

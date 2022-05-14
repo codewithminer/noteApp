@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="../../Android/Sdk/platforms/android-31/data/res/layout/auto_complete_list.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/drawable-v23/circle_black_checked.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable-v24/circle_black.xml" value="0.3351851851851852" />
+        <entry key="app/src/main/res/drawable-v24/circle_black_unchecked.xml" value="0.32407407407407407" />
+        <entry key="app/src/main/res/drawable-v24/circle_blue.xml" value="0.3351851851851852" />
+        <entry key="app/src/main/res/drawable-v24/circle_green.xml" value="0.3351851851851852" />
+        <entry key="app/src/main/res/drawable-v24/circle_pink.xml" value="0.3351851851851852" />
+        <entry key="app/src/main/res/drawable-v24/circle_white.xml" value="0.3351851851851852" />
+        <entry key="app/src/main/res/drawable-v24/circle_yellow.xml" value="0.3351851851851852" />
+        <entry key="app/src/main/res/drawable-v24/ic_delete_white.xml" value="0.24427083333333333" />
+        <entry key="app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.2234375" />
+        <entry key="app/src/main/res/drawable-v24/ic_share_white.xml" value="0.24427083333333333" />
+        <entry key="app/src/main/res/drawable-v24/ripple_gray.xml" value="0.31851851851851853" />
+        <entry key="app/src/main/res/drawable-v24/rounded_bottom_sheet_reminder.xml" value="0.32314814814814813" />
+        <entry key="app/src/main/res/drawable/circle.xml" value="0.3351851851851852" />
+        <entry key="app/src/main/res/drawable/circle_black.xml" value="0.22135416666666666" />
+        <entry key="app/src/main/res/drawable/circle_black_checked.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_black_selected.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_black_unchecked.xml" value="0.32407407407407407" />
+        <entry key="app/src/main/res/drawable/circle_blue.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_blue_checked.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_blue_selected.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_green.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_green_checked.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_green_selected.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_image.xml" value="0.3351851851851852" />
+        <entry key="app/src/main/res/drawable/circle_image_2.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_pink.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_pink_checked.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_pink_selected.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_red.xml" value="0.22135416666666666" />
+        <entry key="app/src/main/res/drawable/circle_red_checked.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_red_selected.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_white.xml" value="0.24427083333333333" />
+        <entry key="app/src/main/res/drawable/circle_white_checked.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_white_selected.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_yellow.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_yellow_checked.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/circle_yellow_selected.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/date_background.xml" value="0.2109375" />
+        <entry key="app/src/main/res/drawable/edit_text_rounded.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/edit_text_rounded2.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/edit_text_rounded3.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/edit_text_rounded4.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/edit_text_rounded5.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/edit_text_rounded6.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/edit_text_rounded7.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/ic_add.xml" value="0.3277777777777778" />
+        <entry key="app/src/main/res/drawable/ic_alarm_black.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_alarm_green.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_alarm_pink.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_alarm_red.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_alarm_white.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_alarm_yellow.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_back.xml" value="0.31851851851851853" />
+        <entry key="app/src/main/res/drawable/ic_back_blue.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_back_green.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_back_pink.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_back_red.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_back_white.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_back_yellow.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_baseline_arrow_back_ios_24.xml" value="0.22083333333333333" />
+        <entry key="app/src/main/res/drawable/ic_baseline_check_18.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_check.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/ic_color.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_color_blue.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_color_green.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_color_pinl.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_color_red.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_color_white.xml" value="0.24427083333333333" />
+        <entry key="app/src/main/res/drawable/ic_color_yellow.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_delete.xml" value="0.2935185185185185" />
+        <entry key="app/src/main/res/drawable/ic_delete_blue.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_delete_green.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_delete_pink.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_delete_red.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_delete_white.xml" value="0.24427083333333333" />
+        <entry key="app/src/main/res/drawable/ic_delete_yellow.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_edit.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_edit_black.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_note.xml" value="0.32592592592592595" />
+        <entry key="app/src/main/res/drawable/ic_reminder.xml" value="0.30925925925925923" />
+        <entry key="app/src/main/res/drawable/ic_reminder_blue.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_reminder_green.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_reminder_pink.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_reminder_red.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_reminder_white.xml" value="0.24427083333333333" />
+        <entry key="app/src/main/res/drawable/ic_reminder_yellow.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_share.xml" value="0.3212962962962963" />
+        <entry key="app/src/main/res/drawable/ic_share_blue.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_share_green.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_share_pink.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_share_red.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_share_white.xml" value="0.24427083333333333" />
+        <entry key="app/src/main/res/drawable/ic_share_yellow.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ripple_gray.xml" value="0.31851851851851853" />
+        <entry key="app/src/main/res/drawable/rounded_bottom_sheet_dialog.xml" value="0.32314814814814813" />
+        <entry key="app/src/main/res/drawable/rounded_bottom_sheet_reminder.xml" value="0.32314814814814813" />
+        <entry key="app/src/main/res/drawable/searchbar_background.xml" value="0.3175925925925926" />
+        <entry key="app/src/main/res/drawable/selected_color.xml" value="0.33240740740740743" />
+        <entry key="app/src/main/res/drawable/selected_color_2.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/small_circle.xml" value="0.32685185185185184" />
+        <entry key="app/src/main/res/drawable/temp.xml" value="0.33240740740740743" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/back_dialog_layout.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/color_dialog_layout.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/date_picker.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/date_picker_layout.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/delete_dialog_fragment.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/delete_dialog_layout.xml" value="0.5" />
+        <entry key="app/src/main/res/layout/dialog_picker.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/empty_state.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/filter_layout.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/fragment_home.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/fragment_note.xml" value="0.3609375" />
+        <entry key="app/src/main/res/layout/fragment_show_content.xml" value="0.20677083333333332" />
+        <entry key="app/src/main/res/layout/fragment_todo.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/home_items.xml" value="0.516295025728988" />
+        <entry key="app/src/main/res/layout/reminder.xml" value="0.36041666666666666" />
+        <entry key="app/src/main/res/layout/reminder_layout.xml" value="0.37621023513139695" />
+        <entry key="app/src/main/res/layout/reminderrrrr.xml" value="0.36041666666666666" />
+        <entry key="app/src/main/res/layout/save_dialog.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/sl_persian_date_picker.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/time_picker.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/time_picker_layout.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/toolbar.xml" value="0.33" />
+        <entry key="app/src/main/res/menu/menu_delete_action.xml" value="0.3609375" />
+        <entry key="app/src/main/res/menu/menu_filter.xml" value="0.33" />
+        <entry key="app/src/main/res/menu/menu_todo.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.2234375" />
+        <entry key="persiandatepicker/src/main/res/layout/dialog_picker.xml" value="0.33" />
+        <entry key="persiandatepicker/src/main/res/layout/sl_persian_date_picker.xml" value="0.36614583333333334" />
+      </map>
+    </option>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="Android Studio default JDK" project-jdk-type="JavaSDK">
+    <output url="file://$PROJECT_DIR$/build/classes" />
+  </component>
+  <component name="ProjectType">
+    <option name="id" value="Android" />
+  </component>
+</project>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+
+    <color name="primary">#66bb6a</color>
+    <color name="variant">#98ee99</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="status_bar_color">#AFAFAF</color>
+
+    <color name="green">#A9C7B5</color>
+    <color name="blue">#A5CFDA</color>
+    <color name="yellow">#F1EBA3</color>
+    <color name="red">#FFBABA</color>
+    <color name="gray_black">#3c3c3c</color>
+    <color name="dark_white">#F2F6F8</color>
+    <color name="pink">#FEC2D6</color>
+
+    <color name="green_text">#385546</color>
+    <color name="blue_text">#4896B8</color>
+    <color name="yellow_text">#A98600</color>
+    <color name="red_text">#FF5252</color>
+    <color name="gray_black_text">#f4f4f4</color>
+    <color name="dark_white_text">#333333</color>
+    <color name="pink_text">#F5347F</color>
+
+
+    <color name="transparent">#80000000</color>
+    <color name="status_white">#E8E8E8</color>
+    <color name="dateColor">#009688</color>
+
+    <color name="dialog_color">#F6F6F6</color>
+</resources>
