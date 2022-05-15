@@ -31,6 +31,7 @@ import com.example.noteapp.receiver.AlarmReceiver
 import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.utils.*
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.back_dialog_layout.*
 import kotlinx.android.synthetic.main.color_dialog_layout.*
 import kotlinx.android.synthetic.main.delete_dialog_layout.*

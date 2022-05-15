@@ -1,5 +1,6 @@
 package com.example.noteapp.adapter
 
+import android.content.Context
 import android.graphics.Color
 import android.util.Log
 import android.view.*
@@ -10,6 +11,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.noteapp.R
 import com.example.noteapp.model.data.Note
+import com.example.noteapp.ui.dialog.DeleteDialog
+import com.example.noteapp.ui.dialog.DeleteDialogListener
+import com.example.noteapp.ui.dialog.FilterDialog
 import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.utils.getBackgroundColor
 import com.example.noteapp.utils.getForegroundColor
@@ -17,7 +21,12 @@ import com.example.noteapp.utils.setPersianNumber
 import com.example.noteapp.utils.setTime
 import kotlinx.android.synthetic.main.home_items.view.*
 
-class MainAdapter(val noteViewModel: NoteViewModel, val activity: FragmentActivity) : RecyclerView.Adapter<MainAdapter.NotesViewHolder>() {
+class MainAdapter(
+    val context: Context,
+    val noteViewModel: NoteViewModel,
+    val activity: FragmentActivity
+    ) : RecyclerView.Adapter<MainAdapter.NotesViewHolder>() {
+
     var isActionModeEnable = false
     var actionMode: ActionMode? = null
     var numberOfSelectedItem = 0
@@ -35,11 +44,20 @@ class MainAdapter(val noteViewModel: NoteViewModel, val activity: FragmentActivi
         override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
             when(item?.itemId){
                 R.id.ic_delete_menu -> {
-                    for (i in selectedItemPosition){
-                        noteViewModel.deleteNote(differ.currentList[i].id)
-                        Log.i("adapter", "del")
-                    }
-                    mode?.finish()
+                    DeleteDialog(
+                        context, object: DeleteDialogListener{
+                            override fun onPositiveClick() {
+                                for (i in selectedItemPosition){
+                                    noteViewModel.deleteNote(differ.currentList[i].id)
+                                    Log.i("adapter", "del")
+                                }
+                                mode?.finish()
+                            }
+                            override fun onNegativeClick() {
+                                mode?.finish()
+                            }
+                        }
+                    ).show()
                     return true
                 }
                 R.id.ic_select_all_menu -> {
@@ -60,7 +78,7 @@ class MainAdapter(val noteViewModel: NoteViewModel, val activity: FragmentActivi
             menu?.findItem(R.id.ic_delete_menu)?.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
             isActionModeEnable = true
             noteViewModel.selectedItemToDelete.observe(activity, Observer {
-                mode?.title = "${setPersianNumber(it.toString())} مورد انتخاب شد"
+                mode?.title = setPersianNumber(it.toString())
             })
 
             return true

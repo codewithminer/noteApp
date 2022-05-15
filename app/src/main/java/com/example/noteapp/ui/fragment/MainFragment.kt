@@ -10,6 +10,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.noteapp.ui.MainActivity
 import com.example.noteapp.R
@@ -18,6 +20,7 @@ import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.ui.dialog.FilterDialog
 import com.example.noteapp.ui.dialog.FilterDialogListener
 import com.example.noteapp.utils.hideKeyboard
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.fragment_home.*
 
 class MainFragment : Fragment(R.layout.fragment_home) {
@@ -146,7 +149,38 @@ class MainFragment : Fragment(R.layout.fragment_home) {
                 return true
             }
         })
+
+        val itemTouchHelperCallBack = object: ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+        ){
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean {
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val note = mainAdapter.differ.currentList[position]
+                noteViewModel.deleteNote(note.id)
+                Snackbar.make(view, "یادداشت با موفقیت حذف شد.", Snackbar.LENGTH_LONG).apply {
+                    setAction("برگشت"){
+                        noteViewModel.saveNote(note)
+                    }
+                    show()
+                }
+            }
+        }
+        ItemTouchHelper(itemTouchHelperCallBack).apply {
+            attachToRecyclerView(rv_main)
+        }
+
     }
+
+
 
     private fun searchDatabase(query: String) {
         val searchQuery = "%$query%"
@@ -156,7 +190,7 @@ class MainFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun setUpRecycler() {
-        mainAdapter = MainAdapter(noteViewModel, requireActivity())
+        mainAdapter = MainAdapter(requireContext(),noteViewModel, requireActivity())
         rv_main.apply {
             adapter = mainAdapter
             layoutManager = StaggeredGridLayoutManager(
