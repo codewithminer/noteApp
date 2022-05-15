@@ -12,7 +12,7 @@
     tools:context=".ui.fragment.MainFragment">
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/tv_title_main"
         style="?textAppearanceHeadline6"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -32,9 +32,9 @@
         android:clickable="true"
         android:focusable="true"
         android:background="?attr/selectableItemBackground"
-        app:layout_constraintBottom_toBottomOf="@+id/textView"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_title_main"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/textView" />
+        app:layout_constraintTop_toTopOf="@+id/tv_title_main" />
 
 
     <SearchView
@@ -83,7 +83,7 @@
         android:background="#fff"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView">
+        app:layout_constraintTop_toBottomOf="@+id/tv_title_main">
 
         <LinearLayout
             android:layout_width="match_parent"

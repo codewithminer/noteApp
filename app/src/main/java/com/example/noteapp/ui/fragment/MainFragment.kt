@@ -35,12 +35,14 @@ class MainFragment : Fragment(R.layout.fragment_home) {
             if (isEmpty) {
                 todo_list_frame.visibility = View.GONE
                 img_filter.visibility = View.GONE
+                tv_title_main.visibility = View.GONE
                 empty_state_frame.visibility = View.VISIBLE
                 layout_main.setBackgroundColor(Color.WHITE)
 
             } else {
                 todo_list_frame.visibility = View.VISIBLE
                 img_filter.visibility = View.VISIBLE
+                tv_title_main.visibility = View.VISIBLE
                 empty_state_frame.visibility = View.GONE
                 layout_main.setBackgroundColor(Color.parseColor("#F7F7F7"))
             }

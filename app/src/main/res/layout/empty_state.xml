@@ -22,8 +22,7 @@
             android:layout_height="wrap_content"
             android:text="@string/emptyStateText"
             style="?textAppearanceHeadline3"
-            android:layout_marginTop="12dp"
-            android:textSize="20dp"/>
+            android:textSize="18dp"/>
 
     </LinearLayout>
 

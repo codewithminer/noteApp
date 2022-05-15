@@ -17,7 +17,7 @@
     <string name="filterLevelOne">تاریخ ایجاد(جدیدترین)</string>
     <string name="filterLevelTwo">تاریخ ایجاد(قدیمی‌ترین)</string>
     <string name="filterLevelThree">مرتب کردن بر اساس رنگ</string>
-    <string name="appTitle">یادداشت</string>
+    <string name="appTitle">لیست یادداشت‌ها</string>
     <string name="searchHintText">جستجوی یادداشت</string>
     <string name="noteToolbarTitle">ایجاد یادداشت</string>
     <string name="noteEditTextHintTitle">یادداشت کنید...</string>
