@@ -39,6 +39,16 @@
             android:visibility="gone"
             android:padding="6dp"/>
 
+        <ImageView
+            android:id="@+id/ic_lock_toolbar"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_lock_black"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="8dp"
+            android:visibility="gone"
+            android:padding="6dp"/>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:layout_gravity="center_horizontal"
+    android:gravity="center_horizontal">
+
+
+    <EditText
+        android:id="@+id/lock_number_one"
+        android:layout_width="28dp"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="22sp"
+        android:inputType="numberPassword"
+        android:gravity="center_horizontal"
+        android:backgroundTint="@color/blue_text"
+        android:maxLength="1"/>
+
+    <EditText
+        android:id="@+id/lock_number_two"
+        android:layout_width="28dp"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="22sp"
+        android:inputType="numberPassword"
+        android:gravity="center_horizontal"
+        android:backgroundTint="@color/blue_text"
+        android:maxLength="1"/>
+
+    <EditText
+        android:id="@+id/lock_number_three"
+        android:layout_width="28dp"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="22sp"
+        android:inputType="numberPassword"
+        android:gravity="center_horizontal"
+        android:backgroundTint="@color/blue_text"
+        android:maxLength="1"/>
+
+    <EditText
+        android:id="@+id/lock_number_four"
+        android:layout_width="28dp"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="22sp"
+        android:inputType="numberPassword"
+        android:gravity="center_horizontal"
+        android:backgroundTint="@color/blue_text"
+        android:maxLength="1"/>
+
+
+
+</LinearLayout>

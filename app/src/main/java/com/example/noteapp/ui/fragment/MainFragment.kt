@@ -150,33 +150,33 @@ class MainFragment : Fragment(R.layout.fragment_home) {
             }
         })
 
-        val itemTouchHelperCallBack = object: ItemTouchHelper.SimpleCallback(
-            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
-        ){
-            override fun onMove(
-                recyclerView: RecyclerView,
-                viewHolder: RecyclerView.ViewHolder,
-                target: RecyclerView.ViewHolder
-            ): Boolean {
-                return true
-            }
-
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                val position = viewHolder.adapterPosition
-                val note = mainAdapter.differ.currentList[position]
-                noteViewModel.deleteNote(note.id)
-                Snackbar.make(view, "یادداشت با موفقیت حذف شد.", Snackbar.LENGTH_LONG).apply {
-                    setAction("برگشت"){
-                        noteViewModel.saveNote(note)
-                    }
-                    show()
-                }
-            }
-        }
-        ItemTouchHelper(itemTouchHelperCallBack).apply {
-            attachToRecyclerView(rv_main)
-        }
+//        val itemTouchHelperCallBack = object: ItemTouchHelper.SimpleCallback(
+//            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+//            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+//        ){
+//            override fun onMove(
+//                recyclerView: RecyclerView,
+//                viewHolder: RecyclerView.ViewHolder,
+//                target: RecyclerView.ViewHolder
+//            ): Boolean {
+//                return true
+//            }
+//
+//            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+//                val position = viewHolder.adapterPosition
+//                val note = mainAdapter.differ.currentList[position]
+//                noteViewModel.deleteNote(note.id)
+//                Snackbar.make(view, "یادداشت با موفقیت حذف شد.", Snackbar.LENGTH_LONG).apply {
+//                    setAction("برگشت"){
+//                        noteViewModel.saveNote(note)
+//                    }
+//                    show()
+//                }
+//            }
+//        }
+//        ItemTouchHelper(itemTouchHelperCallBack).apply {
+//            attachToRecyclerView(rv_main)
+//        }
 
     }
 

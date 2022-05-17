@@ -27,4 +27,12 @@
     <string name="createAlarmText">ایجاد آلارم</string>
     <string name="createNoteText">ذخیره</string>
     <string name="showMarkDownNoteText">نمایش</string>
+
+    <string name="createLock">رمز جدید را وارد کنید</string>
+    <string name="preChangeLock">رمز قبلی را وارد کنید</string>
+    <string name="accessLock">رمز ورود را وارد کنید</string>
+    <string name="changeLockBottomSheet">تغییر رمز</string>
+    <string name="LockBottomSheet">قفل کردن یادداشت</string>
+    <string name="removeLock">برای حذف قفل رمز را وارد کنید</string>
+    <string name="removeLockedNote">برای حذف یادداشت رمز را وارد کنید</string>
 </resources>

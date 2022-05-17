@@ -15,5 +15,6 @@ data class Note(
     val month: Int,
     val day: Int,
     val hour: Int,
-    val minute: Int
+    val minute: Int,
+    var isLock: Boolean
 ): Serializable

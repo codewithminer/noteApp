@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:padding="6dp">
+
+    <ImageView
+        android:id="@+id/img_take_photo"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:src="@drawable/ic_add_photo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <TextView
+        android:id="@+id/tv_take_photo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="گرفتن عکس"
+        android:textSize="18sp"
+        android:textColor="@color/gray_black"
+        app:layout_constraintEnd_toStartOf="@+id/img_take_photo"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginEnd="12dp"/>
+
+    <ImageView
+        android:id="@+id/img_add_photo"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="12dp"
+        android:src="@drawable/ic_insert_photo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/img_take_photo"/>
+
+    <TextView
+        android:id="@+id/tv_add_photo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="رفتن به گالری"
+        android:layout_marginTop="12dp"
+        android:textSize="18sp"
+        android:textColor="@color/gray_black"
+        app:layout_constraintEnd_toStartOf="@+id/img_add_photo"
+        app:layout_constraintTop_toBottomOf="@id/tv_take_photo"
+        android:layout_marginEnd="12dp"/>
+
+    <ImageView
+        android:id="@+id/img_add_voice"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="12dp"
+        android:src="@drawable/ic_add_voice"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/img_add_photo"/>
+
+    <TextView
+        android:id="@+id/tv_add_voice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="12dp"
+        android:text="ضبط صدا"
+        android:textColor="@color/gray_black"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toStartOf="@+id/img_add_photo"
+        app:layout_constraintTop_toBottomOf="@id/tv_add_photo" />
+
+    <ImageView
+        android:id="@+id/img_lock"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="12dp"
+        android:src="@drawable/ic_lock_fill"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/img_add_voice"/>
+
+    <TextView
+        android:id="@+id/tv_create_lock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="12dp"
+        android:text="قفل کردن یادداشت"
+        android:textColor="@color/gray_black"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toStartOf="@+id/img_lock"
+        app:layout_constraintTop_toBottomOf="@id/tv_add_voice" />
+
+    <ImageView
+        android:id="@+id/img_share"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginTop="12dp"
+        android:src="@drawable/ic_share"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/img_lock"/>
+
+    <TextView
+        android:id="@+id/tv_share"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="12dp"
+        android:text="اشتراک گذاری متن"
+        android:textColor="@color/gray_black"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toStartOf="@+id/img_share"
+        app:layout_constraintTop_toBottomOf="@id/tv_create_lock" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
