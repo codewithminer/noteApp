@@ -13,10 +13,7 @@ import com.example.noteapp.R
 import com.example.noteapp.model.data.Note
 import com.example.noteapp.ui.dialog.*
 import com.example.noteapp.ui.viewmodel.NoteViewModel
-import com.example.noteapp.utils.getBackgroundColor
-import com.example.noteapp.utils.getForegroundColor
-import com.example.noteapp.utils.setPersianNumber
-import com.example.noteapp.utils.setTime
+import com.example.noteapp.utils.*
 import kotlinx.android.synthetic.main.home_items.view.*
 import kotlinx.android.synthetic.main.locked_note_layout.view.*
 
@@ -167,7 +164,7 @@ class MainAdapter(
                             override fun onRemoveLock() {
                             }
 
-                        }, 3).show()
+                        }, LockStates.EnterNote).show()
                     }
                 }
             }

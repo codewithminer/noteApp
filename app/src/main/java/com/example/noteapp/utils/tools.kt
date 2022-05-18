@@ -5,11 +5,18 @@ import android.content.Context
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.fragment.app.Fragment
 import com.aminography.primecalendar.civil.CivilCalendar
 import com.aminography.primecalendar.common.operators.DayOfMonth
 import com.aminography.primecalendar.common.operators.plusAssign
 import com.aminography.primecalendar.persian.PersianCalendar
 import com.example.noteapp.model.data.DateModel
+
+enum class LockStates{
+    CreateLock, ChangeLock,
+    EnterNote, RemoveLock,
+    RemoveLockedNote
+}
 
 fun setTime(hour: Int, minute: Int): String {
     var str: String = ""
@@ -501,6 +508,14 @@ fun isPersianWord(s: String): Boolean {
 fun Context.hideKeyboard(view: View) {
     val inputMethodManager = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
     inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
+}
+
+fun Fragment.hideKeyboard() {
+    view?.let { activity?.hideKeyboard(it) }
+}
+
+fun Activity.hideKeyboard() {
+    hideKeyboard(currentFocus ?: View(this))
 }
 
 private fun convertCivilCalendarToPersianCalendar(date: DateModel): Array<Int> {

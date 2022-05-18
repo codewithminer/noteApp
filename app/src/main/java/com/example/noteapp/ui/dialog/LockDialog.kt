@@ -7,24 +7,29 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.Window
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDialog
 import com.example.noteapp.R
+import com.example.noteapp.utils.LockStates
+import com.example.noteapp.utils.hideKeyboard
 import kotlinx.android.synthetic.main.lock_input_design_layout.*
 import kotlinx.android.synthetic.main.lock_dialog_layout.*
 
 
-class LockDialog(context: Context, val lockDialogListener: LockDialogListener, val state: Int) :
+class LockDialog(
+    context: Context,
+    val lockDialogListener: LockDialogListener,
+    val state: LockStates
+) :
     AppCompatDialog(context) {
-    // state 1 -> create LOCK
-    // state 2 -> change LOCK
-    // state 3 -> enter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        var changePasswordState = 0
+        var changePasswordState = 0  // 0 -> enter previous password, 1 -> enter new password
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.lock_dialog_layout)
 
@@ -35,11 +40,12 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
         window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         when (state) {
-            1 -> tv_lock.text = context.getString(R.string.createLock)
-            2 -> tv_lock.text = context.getString(R.string.preChangeLock)
-            3 -> tv_lock.text = context.getString(R.string.accessLock)
-            4 -> tv_lock.text = context.getString(R.string.removeLock)
-            5 -> tv_lock.text = context.getString(R.string.removeLockedNote)
+            LockStates.CreateLock -> tv_lock.text = context.getString(R.string.createLock)
+            LockStates.ChangeLock -> tv_lock.text = context.getString(R.string.preChangeLock)
+            LockStates.EnterNote -> tv_lock.text = context.getString(R.string.accessLock)
+            LockStates.RemoveLock -> tv_lock.text = context.getString(R.string.removeLock)
+            LockStates.RemoveLockedNote -> tv_lock.text =
+                context.getString(R.string.removeLockedNote)
         }
 
         lock_number_one.requestFocus()
@@ -57,7 +63,6 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
 
                 override fun afterTextChanged(p0: Editable?) {
                 }
-
             }
         )
 
@@ -71,12 +76,10 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
                         lock_number_three.requestFocus()
                     else
                         lock_number_one.requestFocus()
-
                 }
 
                 override fun afterTextChanged(p0: Editable?) {
                 }
-
             }
         )
 
@@ -94,7 +97,6 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
 
                 override fun afterTextChanged(p0: Editable?) {
                 }
-
             }
         )
 
@@ -110,18 +112,16 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
                         lock_number_two.text.toString().length == 1 &&
                         lock_number_one.text.toString().length == 1
                     ) {
-                        val password = "${lock_number_one.text}${lock_number_two.text}" +
-                                "${lock_number_three.text}${lock_number_four.text}"
-                        if (state == 1) {
+                        val password = getEnteredPassword()
+                        val lockValue = getStoredPassword()
+
+                        if (state == LockStates.CreateLock) {
                             storePassword(password)
                             lockDialogListener.onCreateLock(password)
-                            dismiss()
                             closeKeyboard()
-                        } else if (state == 2) {
+                            dismiss()
+                        } else if (state == LockStates.ChangeLock) {
                             if (changePasswordState == 0) {
-                                val sharedPreferences: SharedPreferences =
-                                    context.getSharedPreferences("LOCK", Context.MODE_PRIVATE)
-                                val lockValue = sharedPreferences.getString("lock_value", "")
                                 if (lockValue == password) {
                                     tv_lock.text = context.getString(R.string.createLock)
                                     lock_number_one.setText("")
@@ -134,27 +134,20 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
                             } else if (changePasswordState == 1) {
                                 storePassword(password)
                                 lockDialogListener.onChangeLock(password)
-                                dismiss()
                                 closeKeyboard()
+                                dismiss()
                             }
-                        } else if (state == 3) {
-                            val sharedPreferences: SharedPreferences =
-                                context.getSharedPreferences("LOCK", Context.MODE_PRIVATE)
-                            val lockValue = sharedPreferences.getString("lock_value", "")
-                            Toast.makeText(context, lockValue, Toast.LENGTH_SHORT).show()
+                        } else if (state == LockStates.EnterNote) {
                             if (lockValue == password) {
                                 lockDialogListener.onAccessNote()
-                                dismiss()
                                 closeKeyboard()
+                                dismiss()
                             }
-                        } else if (state == 4 || state == 5) {
-                            val sharedPreferences: SharedPreferences =
-                                context.getSharedPreferences("LOCK", Context.MODE_PRIVATE)
-                            val lockValue = sharedPreferences.getString("lock_value", "")
+                        } else if (state == LockStates.RemoveLock || state == LockStates.RemoveLockedNote) {
                             if (lockValue == password) {
                                 lockDialogListener.onRemoveLock()
-                                dismiss()
                                 closeKeyboard()
+                                dismiss()
                             }
                         }
                     } else
@@ -164,9 +157,11 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
 
                 override fun afterTextChanged(p0: Editable?) {
                 }
-
             }
         )
+        setOnDismissListener {
+            closeKeyboard()
+        }
 
 //        lock_number_two.setOnKeyListener { view, keyCode, keyEvent ->
 //            if (keyCode == 67)
@@ -189,6 +184,17 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
 
     }
 
+    private fun getStoredPassword(): String {
+        val sharedPreferences: SharedPreferences =
+            context.getSharedPreferences("LOCK", Context.MODE_PRIVATE)
+        return sharedPreferences.getString("lock_value", "").toString()
+    }
+
+    private fun getEnteredPassword(): String {
+        return "${lock_number_one.text}${lock_number_two.text}" +
+                "${lock_number_three.text}${lock_number_four.text}"
+    }
+
     private fun storePassword(password: String) {
         val sharedPreferences: SharedPreferences =
             context.getSharedPreferences("LOCK", Context.MODE_PRIVATE)
@@ -197,7 +203,7 @@ class LockDialog(context: Context, val lockDialogListener: LockDialogListener, v
         editor.apply()
     }
 
-    fun showKeyboard() {
+    private fun showKeyboard() {
         val inputMethodManager =
             context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)

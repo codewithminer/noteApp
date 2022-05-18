@@ -68,8 +68,8 @@ class NoteViewModel(
 
     fun getNote(id: Int): LiveData<Note> = noteRepository.getNote(id)
 
-    fun searchNote(searchedText: String): LiveData<List<Note>> {
-        return noteRepository.searchNote(searchedText)
+    fun searchNote(searchedText: String, isLock: Boolean): LiveData<List<Note>> {
+        return noteRepository.searchNote(searchedText, isLock)
     }
 
     private suspend fun insertAlarm(alarm: Alarm) {

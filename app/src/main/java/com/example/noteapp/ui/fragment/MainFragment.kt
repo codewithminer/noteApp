@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.SearchView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -121,7 +122,7 @@ class MainFragment : Fragment(R.layout.fragment_home) {
         }
 
         mainAdapter.setOnItemClickListener {
-            view.let { activity?.hideKeyboard(it) }
+            view.let { v -> activity?.hideKeyboard(v) }
             val action = MainFragmentDirections.actionHomeFragmentToNoteFragment(it.id)
             findNavController().navigate(action)        }
 
@@ -184,7 +185,10 @@ class MainFragment : Fragment(R.layout.fragment_home) {
 
     private fun searchDatabase(query: String) {
         val searchQuery = "%$query%"
-        noteViewModel.searchNote(searchQuery).observe(viewLifecycleOwner, Observer { notes ->
+        var isLock = false
+        if (query != "")
+            isLock = true
+        noteViewModel.searchNote(searchQuery, isLock).observe(viewLifecycleOwner, Observer { notes ->
             mainAdapter.differ.submitList(notes)
         })
     }

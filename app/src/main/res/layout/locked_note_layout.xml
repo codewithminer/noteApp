@@ -14,12 +14,31 @@
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent">
 
-    <ImageView
-        android:id="@+id/img_lock"
-        android:layout_width="128dp"
-        android:layout_height="128dp"
-        android:layout_gravity="center"
-        android:src="@drawable/lock_img"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="16dp">
+
+        <ImageView
+            android:id="@+id/img_lock"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_lock_fill"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="این یادداشت قفل شده است"
+            android:layout_gravity="center"
+            android:layout_marginTop="12dp"
+            android:textColor="@color/gray_black"
+            android:textSize="14sp"/>
+
+    </LinearLayout>
+
+
 
 </androidx.cardview.widget.CardView>
 

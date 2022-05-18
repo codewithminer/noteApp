@@ -67,6 +67,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
         noteID = args.id
         Log.i("time", "primary noteId is $noteID")
         primaryText = et_todo.text.toString()
+        requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
         noteViewModel.getNote(args.id).observe(viewLifecycleOwner, Observer { note ->
             note?.let {
@@ -86,7 +87,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 setUpNoteFragmentDesign(colorIndex)
             }
         })
-
+        hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
             alarmID = it
             setAlarmIcon()
@@ -123,10 +124,11 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                     isChange = true
                     isLock = false
                     setLockIcon()
+//                    view.let { activity?.hideKeyboard(it) }
                     Toast.makeText(requireContext(), "password REMOVED.", Toast.LENGTH_SHORT).show()
                 }
 
-            }, 4).show()
+            }, LockStates.RemoveLock).show()
         }
 
         btn_reminder.setOnClickListener {
@@ -159,7 +161,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                             NavHostFragment.findNavController(this@NoteFragment).navigateUp()
                         }
 
-                    },5).show()
+                    },LockStates.RemoveLockedNote).show()
                 }else {
                     noteViewModel.deleteNote(noteID)
                     noteViewModel.deleteAlarm(alarmID)
@@ -218,14 +220,16 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
             }
 
             bottomSheetDialog.tv_create_lock.setOnClickListener {
-                val lockOption = if (isLock) 2 else 1
-                if (lockOption == 1) {
+                val lockOption = if (isLock) LockStates.ChangeLock else LockStates.CreateLock
+
+                if (lockOption == LockStates.CreateLock) {
                     val sharedPreferences: SharedPreferences =
-                        requireContext()?.getSharedPreferences("LOCK", Context.MODE_PRIVATE)
+                        requireContext().getSharedPreferences("LOCK", Context.MODE_PRIVATE)
                     val lockValue = sharedPreferences.getString("lock_value", "")
                     if (lockValue != "") {
                         isLock = true
                         isChange = true
+                        setLockIcon()
                         Toast.makeText(
                             requireContext(),
                             "password CREATED.",
@@ -247,6 +251,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                             "password CREATED.",
                             Toast.LENGTH_SHORT
                         ).show()
+                        hideKeyboard()
+                        requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                     }
 
                     override fun onChangeLock(password: String) {
@@ -258,6 +264,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                             "password CHANGED.",
                             Toast.LENGTH_SHORT
                         ).show()
+                        hideKeyboard()
+                        requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                     }
 
                     override fun onAccessNote() {

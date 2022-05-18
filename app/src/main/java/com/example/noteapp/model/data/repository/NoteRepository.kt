@@ -1,5 +1,6 @@
 package com.example.noteapp.model.data.repository
 
+import androidx.lifecycle.LiveData
 import com.example.noteapp.model.data.Note
 import com.example.noteapp.model.data.db.NoteDatabase
 
@@ -11,7 +12,11 @@ class NoteRepository(
     suspend fun deleteNote(id: Int) = db.noteDao().deleteNote(id)
     fun getAllNotes() = db.noteDao().getAllNotes()
     fun getNote(id: Int) = db.noteDao().getNote(id)
-    fun searchNote(searchedText: String) = db.noteDao().searchNote(searchedText)
+    fun searchNote(searchedText: String, isLock: Boolean): LiveData<List<Note>> {
+        if (isLock)
+            return db.noteDao().searchNote(searchedText)
+        return db.noteDao().searchAllNote(searchedText)
+    }
     fun getNoteById(id: Int): Note = db.noteDao().searchNoteByAlarmId(id)
     fun getNotesByDateLatest() = db.noteDao().getNotesByDateLatest()
     fun getNotesByDateOldest() = db.noteDao().getNotesByDateOldest()
