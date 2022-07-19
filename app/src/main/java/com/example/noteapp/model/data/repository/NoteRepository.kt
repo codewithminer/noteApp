@@ -9,9 +9,9 @@ class NoteRepository(
 ) {
 
     suspend fun insertNote(note: Note) = db.noteDao().insertNote(note)
-    suspend fun deleteNote(id: Int) = db.noteDao().deleteNote(id)
+    suspend fun deleteNote(id: String) = db.noteDao().deleteNote(id)
     fun getAllNotes() = db.noteDao().getAllNotes()
-    fun getNote(id: Int) = db.noteDao().getNote(id)
+    fun getNote(id: String) = db.noteDao().getNote(id)
     fun searchNote(searchedText: String, isLock: Boolean): LiveData<List<Note>> {
         if (isLock)
             return db.noteDao().searchNote(searchedText)

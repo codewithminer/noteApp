@@ -1,23 +1,17 @@
 package com.example.noteapp.ui.fragment
 
-import android.Manifest
 import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import android.graphics.Color
-import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.core.app.ActivityCompat.finishAffinity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -28,15 +22,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.aminography.primecalendar.persian.PersianCalendar
 import com.example.noteapp.ui.MainActivity
 import com.example.noteapp.R
+import com.example.noteapp.adapter.CheckListAdapter
 import com.example.noteapp.adapter.ReminderAdapter
 import com.example.noteapp.model.data.Alarm
+import com.example.noteapp.model.data.CheckBoxContent
 import com.example.noteapp.model.data.DateModel
 import com.example.noteapp.model.data.Note
 import com.example.noteapp.receiver.AlarmReceiver
 import com.example.noteapp.ui.dialog.LockDialog
 import com.example.noteapp.ui.dialog.LockDialogListener
-import com.example.noteapp.ui.dialog.RecorderDialog
-import com.example.noteapp.ui.dialog.RecorderDialogListener
 import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.utils.*
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -44,18 +38,26 @@ import kotlinx.android.synthetic.main.add_box_layout.*
 import kotlinx.android.synthetic.main.back_dialog_layout.*
 import kotlinx.android.synthetic.main.color_dialog_layout.*
 import kotlinx.android.synthetic.main.delete_dialog_layout.*
+import kotlinx.android.synthetic.main.fragment_checklist.*
+import kotlinx.android.synthetic.main.fragment_home.*
 import kotlinx.android.synthetic.main.fragment_note.*
+import kotlinx.android.synthetic.main.fragment_note.appBarLayout
+import kotlinx.android.synthetic.main.fragment_note.btn_add_box
+import kotlinx.android.synthetic.main.fragment_note.btn_color
+import kotlinx.android.synthetic.main.fragment_note.btn_delete
+import kotlinx.android.synthetic.main.fragment_note.btn_reminder
+import kotlinx.android.synthetic.main.fragment_note.navigation_todo
+import kotlinx.android.synthetic.main.fragment_note.todo_toolbar
 import kotlinx.android.synthetic.main.reminder.*
 import kotlinx.android.synthetic.main.toolbar.*
-import java.io.File
-import java.io.IOException
 import java.util.*
 
-class NoteFragment : Fragment(R.layout.fragment_note) {
+class CheckListFragment: Fragment(R.layout.fragment_checklist) {
 
     private val args: NoteFragmentArgs by navArgs()
     lateinit var noteViewModel: NoteViewModel
     lateinit var reminderAdapter: ReminderAdapter
+    lateinit var checkListAdapter: CheckListAdapter
     lateinit var alarmManager: AlarmManager
     private lateinit var pendingIntent: PendingIntent
     lateinit var calendar: Calendar
@@ -67,50 +69,37 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
     private var isLock = false
     private lateinit var primaryAlarm: Alarm
     private var primaryText = ""
-
-    private var output: String? = null
-    private var mediaRecorder: MediaRecorder? = null
-    private var state: Boolean = false
-    private var fileName: String? = null
-    private var recordingStopped: Boolean = false
-
-    private val RECORD_AUDIO_REQUEST_CODE = 101
+    var test = 0
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         noteViewModel = (activity as MainActivity).noteViewModel
-        if (args.id == "-1")
+        noteID = args.id.toString()
+        if (noteID == "-1")
             noteID = UUID.randomUUID().toString()
-        Toast.makeText(requireContext(), noteID.toString(), Toast.LENGTH_SHORT).show()
+        checkListAdapter = CheckListAdapter(noteViewModel)
+        setUpRecycler()
         Log.i("time", "primary noteId is $noteID")
-        primaryText = et_todo.text.toString()
-        requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-
-//        output = Environment.getExternalStorageDirectory().absolutePath + "/recording.mp3"
-//        mediaRecorder.setOutputFile(output)
-        if (args.id != "-1"){
-            noteID = args.id
-            noteViewModel.getNote(args.id).observe(viewLifecycleOwner, Observer { note ->
-                note?.let {
-                    noteID = note.id
-                    primaryText = note.content
-                    colorIndex = note.color_index
-                    isLock = note.isLock
-                    if (final_text != "") {
-                        et_todo.setText(final_text)
-                        colorIndex = COLOR_INDEX
-                        isLock = IS_LOCK
-                    } else
-                        et_todo.setText(note.content)
-                    if (note.alarm_id != -1) {
-                        getAlarm(note.alarm_id)
-                    }
-                    setLockIcon()
-                    setUpNoteFragmentDesign(colorIndex)
+        noteViewModel.getNote(args.id.toString()).observe(viewLifecycleOwner, Observer { note ->
+            note?.let {
+                noteID = note.id
+                primaryText = note.content
+                colorIndex = note.color_index
+                isLock = note.isLock
+                if (note.alarm_id != -1)
+                    getAlarm(note.alarm_id)
+                setLockIcon()
+//                noteViewModel.checkBoxContent = convertTextToCheckBox(note.content)
+                val t = convertTextToCheckBox(note.content)
+                for (i in 0 until t.size){
+                    noteViewModel.checkBoxContent.add(CheckBoxContent(t[i].content, t[i].check))
+                    test++
+                    checkListAdapter.differ.submitList(noteViewModel.checkBoxContent)
                 }
-            })
-        }
+                Toast.makeText(requireContext(), test.toString(), Toast.LENGTH_SHORT).show()
+                setUpNoteFragmentDesign(colorIndex)
+            }
+        })
 
         hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
@@ -121,7 +110,6 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
 
         noteViewModel.noteId.observe(viewLifecycleOwner, Observer {
             noteID = it.toString()
-            Log.i("time", "change noteId to: $noteID")
         })
 
         createNotificationChannel()
@@ -134,6 +122,34 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
             saveNote()
             view.let { activity?.hideKeyboard(it) }
         }
+
+        add_item.setOnClickListener {
+            noteViewModel.checkBoxContent.add(CheckBoxContent("hello, dear", false))
+            checkListAdapter.changeIndex(colorIndex)
+            checkListAdapter.differ.submitList(noteViewModel.checkBoxContent)
+//            checkListAdapter.notifyDataSetChanged()
+            checkListAdapter.notifyItemInserted(test)
+            test++
+            if (noteViewModel.checkBoxContent.size>0){
+                tv_save.visibility = View.VISIBLE
+            }
+            isChange = true
+        }
+
+        noteViewModel.boxCountCheck.observe(viewLifecycleOwner, Observer {
+            if (noteViewModel.checkBoxContent.size<1)
+                tv_save.visibility = View.GONE
+            isChange = true
+        })
+
+        noteViewModel.contentsChange.observe(viewLifecycleOwner, Observer {
+            if (it){
+                tv_save.visibility = View.VISIBLE
+                isChange = true
+            }else{
+                tv_save.visibility = View.GONE
+            }
+        })
 
         ic_lock_toolbar.setOnClickListener {
             LockDialog(requireContext(), object : LockDialogListener {
@@ -184,7 +200,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                                 cancelAlarm()
                             resetData()
                             bottomSheetDialog.dismiss()
-                            NavHostFragment.findNavController(this@NoteFragment).navigateUp()
+                            NavHostFragment.findNavController(this@CheckListFragment).navigateUp()
                         }
 
                     },LockStates.RemoveLockedNote).show()
@@ -195,25 +211,13 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                         cancelAlarm()
                     resetData()
                     bottomSheetDialog.dismiss()
-                    NavHostFragment.findNavController(this@NoteFragment).navigateUp()
+                    NavHostFragment.findNavController(this@CheckListFragment).navigateUp()
                 }
             }
             bottomSheetDialog.btn_cancel_delete_dialog.setOnClickListener {
                 bottomSheetDialog.dismiss()
             }
             bottomSheetDialog.show()
-//            SaveDialog(requireContext(),object: SaveDialogListener{
-//                override fun onPositiveClick() {
-//                    noteViewModel.deleteNote(noteID)
-//                    noteViewModel.deleteAlarm(alarmID)
-//                    if (alarmID != -1)
-//                        cancelAlarm()
-//                    resetData()
-//                    NavHostFragment.findNavController(this@NoteFragment).navigateUp()
-//                }
-//                override fun onNegativeClick() {
-//                }
-//            }, getString(R.string.title_delete_dialog)).show()
         }
 
         btn_add_box.setOnClickListener {
@@ -229,19 +233,19 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
 
             bottomSheetDialog.tv_share.setOnClickListener {
                 val intent = Intent(android.content.Intent.ACTION_SEND)
-                val shareBody = et_todo.text.toString()
-                if (shareBody != "") {
-                    intent.setType("text/plain")
-                    intent.putExtra(Intent.EXTRA_SUBJECT, "From Note App")
-                    intent.putExtra(Intent.EXTRA_TEXT, shareBody)
-                    startActivity(Intent.createChooser(intent, "اشتراک متن"))
-                } else
-                    Toast.makeText(
-                        requireContext(),
-                        "متنی برای اشتراک وجود ندارد",
-                        Toast.LENGTH_SHORT
-                    )
-                        .show()
+//                val shareBody = et_todo.text.toString()
+//                if (shareBody != "") {
+//                    intent.setType("text/plain")
+//                    intent.putExtra(Intent.EXTRA_SUBJECT, "From Note App")
+//                    intent.putExtra(Intent.EXTRA_TEXT, shareBody)
+//                    startActivity(Intent.createChooser(intent, "اشتراک متن"))
+//                } else
+//                    Toast.makeText(
+//                        requireContext(),
+//                        "متنی برای اشتراک وجود ندارد",
+//                        Toast.LENGTH_SHORT
+//                    )
+//                        .show()
                 bottomSheetDialog.dismiss()
             }
 
@@ -303,62 +307,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
 
                 }, lockOption).show()
             }
-
-            bottomSheetDialog.tv_add_voice.setOnClickListener {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    getPermissionToRecordAudio()
-                }
-                RecorderDialog(requireContext(), object: RecorderDialogListener{
-                    override fun onStopRecorder() {
-                        try {
-                            mediaRecorder!!.stop()
-                            mediaRecorder!!.release()
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                        mediaRecorder = null
-                        Toast.makeText(requireContext(), "stop recording.", Toast.LENGTH_SHORT).show()
-                    }
-                }).show()
-
-                mediaRecorder = MediaRecorder()
-                mediaRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
-                mediaRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-//                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-//                mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                val root = android.os.Environment.getExternalStorageDirectory()
-                val file = File(root.absolutePath + "/NoteApplication/${noteID}/Audios/")
-                if (!file.exists()) {
-                    file.mkdirs()
-                }
-
-                fileName = root.absolutePath + "/NoteApplication/${noteID}/Audios/" + (System.currentTimeMillis().toString() + ".mp3")
-                Log.d("filename", fileName.toString())
-                mediaRecorder!!.setOutputFile(fileName)
-                mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-
-                try {
-                    mediaRecorder!!.prepare()
-                    mediaRecorder!!.start()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-
-                bottomSheetDialog.dismiss()
-            }
-            bottomSheetDialog.tv_add_photo.setOnClickListener {
-                stopRecording()
-            }
-
             bottomSheetDialog.show()
-        }
-
-        tv_markdown.setOnClickListener {
-            view.let { activity?.hideKeyboard(it) }
-            final_text = et_todo.text.toString()
-            COLOR_INDEX = colorIndex
-            IS_LOCK = isLock
-            findNavController().navigate(NoteFragmentDirections.actionNoteFragmentToShowContentFragment())
         }
 
         todo_toolbar.onBackButtonClickListener = View.OnClickListener {
@@ -374,122 +323,17 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 }
 
             })
-
-        et_todo.addTextChangedListener(
-            object : TextWatcher {
-                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                }
-
-                override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                    val checkContent = et_todo.text.toString()
-                    if (checkContent != "") {
-                        tv_save.visibility = View.VISIBLE
-                        tv_markdown.visibility = View.VISIBLE
-                    } else {
-                        tv_save.visibility = View.GONE
-                        tv_markdown.visibility = View.GONE
-                    }
-                }
-
-                override fun afterTextChanged(p0: Editable?) {
-                }
-            })
-    }
-
-    private fun stopRecording(){
-        if(state){
-            mediaRecorder?.stop()
-            mediaRecorder?.release()
-            state = false
-        }else{
-            Toast.makeText(requireContext(), "You are not recording right now!", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name: CharSequence = "reminder"
-            val description = "channel for alarm manager"
-            val important = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel("notify", name, important)
-            channel.description = description
-            val notificationManager =
-                requireContext().getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun setAlarm() {
-        if (noteID == "-1")
-            return
-        alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(requireContext(), AlarmReceiver::class.java)
-        intent.putExtra("id", noteID)
-        intent.putExtra("content", et_todo.text.toString())
-        intent.putExtra("Destination", "1")
-        Log.i("viewmodel", "give noteId is$noteID")
-        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, 0)
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-//        alarmManager.setRepeating(
-//            AlarmManager.RTC_WAKEUP, calendar.timeInMillis,
-//            AlarmManager.INTERVAL_DAY, pendingIntent
-//        )
-    }
-
-    private fun cancelAlarm() {
-        alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(requireContext(), AlarmReceiver::class.java)
-        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, 0)
-        alarmManager.cancel(pendingIntent)
-        Toast.makeText(requireContext(), "آلارم حذف شد.", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun setAlarmIcon() {
-        Log.i("viewmodel", "ALARMID IS $alarmID")
-        if (alarmID != -1) {
-            ic_alarm_toolbar.visibility = View.VISIBLE
-            when (colorIndex) {
-                1 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_black)
-                2 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_white)
-                3 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_red)
-                4 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_green)
-                5 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_blue)
-                6 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_yellow)
-                7 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_pink)
-            }
-        } else
-            ic_alarm_toolbar.visibility = View.GONE
-    }
-
-    private fun setLockIcon() {
-        if (isLock) {
-            ic_lock_toolbar.visibility = View.VISIBLE
-            when (colorIndex) {
-                1 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_black)
-                2 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_white)
-                3 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_red)
-                4 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_green)
-                5 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_blue)
-                6 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_yellow)
-                7 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_pink)
-            }
-        } else
-            ic_lock_toolbar.visibility = View.GONE
-    }
-
-    private fun getAlarm(id: Int) {
-        noteViewModel.getAlarmFromRoom(id).observe(viewLifecycleOwner, Observer { alarm ->
-            alarm?.let {
-                primaryAlarm = alarm
-                alarmID = alarm.id
-                setAlarmIcon()
-            }
-        })
     }
 
     private fun saveNote() {
         resetData()
-        val text = et_todo.text.toString()
+        var text = ""
+        for (i in 0 until noteViewModel.checkBoxContent.size){
+            text += if (noteViewModel.checkBoxContent[i].check)
+                "[x]${noteViewModel.checkBoxContent[i].content}!@#"
+            else
+                "[e]${noteViewModel.checkBoxContent[i].content}!@#"
+        }
         Log.i("equal", "text1: $text")
         Log.i("equal", "text2: $primaryText")
         if (text != primaryText)
@@ -518,8 +362,9 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
             if (alarmID != -1 && isAlarmChanged)
                 setAlarm()
             noteViewModel.saveNote(note)
-
-            val action = NoteFragmentDirections.actionNoteFragmentToMainFragment()
+            noteViewModel.checkBoxContent.clear()
+            noteViewModel.contentsChange.value = false
+            val action = CheckListFragmentDirections.actionCheckListFragmentToMainFragment()
             findNavController().navigate(action)
         } else if (text == "" && isChange) {
             deleteNoteAndAlarm()
@@ -527,21 +372,14 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
             NavHostFragment.findNavController(this).navigateUp()
     }
 
-    private fun deleteNoteAndAlarm() {
-        noteViewModel.deleteNote(noteID)
-        noteViewModel.deleteAlarm(alarmID)
-        if (alarmID != -1)
-            cancelAlarm()
-        NavHostFragment.findNavController(this).navigateUp()
-    }
-
-    private fun showColorListDialog() {
+    private fun showColorListDialog(){
         val bottomSheetDialog =
             BottomSheetDialog(requireContext(), R.style.CustomBottomSheetDialog)
         bottomSheetDialog.setContentView(R.layout.color_dialog_layout)
         getSelectedColor(bottomSheetDialog)
         bottomSheetDialog.color_group.setOnCheckedChangeListener { _, i ->
             isChange = isChange.or(true) // changed Color
+            noteViewModel.contentsChange.value = true
             when (i) {
                 bottomSheetDialog.color1.id -> {
                     colorIndex = 1
@@ -670,6 +508,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 noteViewModel.saveAlarm(alarm)
                 isAlarmChanged = true
                 isChange = isChange.or(true)    // changed Alarm
+                noteViewModel.contentsChange.value = true
                 setAlarmIcon()
                 Toast.makeText(
                     requireContext(),
@@ -692,6 +531,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 ic_alarm_toolbar.visibility = View.GONE
                 isChange = isChange.or(true)    // changed Alarm
                 noteViewModel.alarmId.value = -1
+                noteViewModel.contentsChange.value = true
                 bottomSheetDialog.dismiss()
             }
         }
@@ -725,14 +565,105 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
         return 0
     }
 
-    private fun setUpNoteFragmentDesign(index: Int) {
+    private fun createNotificationChannel(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name: CharSequence = "reminder"
+            val description = "channel for alarm manager"
+            val important = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel("notify", name, important)
+            channel.description = description
+            val notificationManager =
+                requireContext().getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
 
-        et_todo.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
-        et_todo.setTextColor(Color.parseColor(getForegroundColor(index)))
+    private fun setAlarm() {
+        if (noteID == "-1")
+            return
+        alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(requireContext(), AlarmReceiver::class.java)
+        intent.putExtra("id", noteID)
+        intent.putExtra("content", "Check your List!")
+        intent.putExtra("Destination", "2")
+        Log.i("viewmodel", "give noteId is$noteID")
+        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, 0)
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+//        alarmManager.setRepeating(
+//            AlarmManager.RTC_WAKEUP, calendar.timeInMillis,
+//            AlarmManager.INTERVAL_DAY, pendingIntent
+//        )
+    }
+
+    private fun cancelAlarm() {
+        alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(requireContext(), AlarmReceiver::class.java)
+        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, 0)
+        alarmManager.cancel(pendingIntent)
+        Toast.makeText(requireContext(), "آلارم حذف شد.", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun setAlarmIcon() {
+        Log.i("viewmodel", "ALARMID IS $alarmID")
+        if (alarmID != -1) {
+            ic_alarm_toolbar.visibility = View.VISIBLE
+            when (colorIndex) {
+                1 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_black)
+                2 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_white)
+                3 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_red)
+                4 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_green)
+                5 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_blue)
+                6 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_yellow)
+                7 -> ic_alarm_toolbar.setImageResource(R.drawable.ic_alarm_pink)
+            }
+        } else
+            ic_alarm_toolbar.visibility = View.GONE
+    }
+
+    private fun setLockIcon() {
+        if (isLock) {
+            ic_lock_toolbar.visibility = View.VISIBLE
+            when (colorIndex) {
+                1 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_black)
+                2 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_white)
+                3 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_red)
+                4 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_green)
+                5 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_blue)
+                6 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_yellow)
+                7 -> ic_lock_toolbar.setImageResource(R.drawable.ic_lock_pink)
+            }
+        } else
+            ic_lock_toolbar.visibility = View.GONE
+    }
+
+    private fun getAlarm(id: Int) {
+        noteViewModel.getAlarmFromRoom(id).observe(viewLifecycleOwner, Observer { alarm ->
+            alarm?.let {
+                primaryAlarm = alarm
+                alarmID = alarm.id
+                setAlarmIcon()
+            }
+        })
+    }
+
+    private fun deleteNoteAndAlarm(){
+        noteViewModel.deleteNote(noteID)
+        noteViewModel.deleteAlarm(alarmID)
+        if (alarmID != -1)
+            cancelAlarm()
+        NavHostFragment.findNavController(this).navigateUp()
+    }
+
+    private fun setUpNoteFragmentDesign(index: Int) {
+        checkListAdapter.changeIndex(index)
+        checkListAdapter.notifyDataSetChanged()
+        cb_main_layout.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
+        rv_check_list.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
         toolbarTitleTv.setTextColor(Color.parseColor(getForegroundColor(index)))
         tv_markdown.setTextColor(Color.parseColor(getForegroundColor(index)))
         tv_save.setTextColor(Color.parseColor(getForegroundColor(index)))
         appBarLayout.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
+        add_item.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
         navigation_todo.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
         btn_add_box.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
         btn_color.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
@@ -756,7 +687,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 btn_color.setImageResource(R.drawable.ic_color)
                 btn_delete.setImageResource(R.drawable.ic_delete)
                 btn_reminder.setImageResource(R.drawable.ic_reminder)
-
+                img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
+                tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
             2 -> {
                 backBtn.setImageResource(R.drawable.ic_back_white)
@@ -765,7 +697,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 btn_delete.setImageResource(R.drawable.ic_delete_white)
                 btn_reminder.setImageResource(R.drawable.ic_reminder_white)
                 tv_save.setTextColor(Color.parseColor(getForegroundColor(index)))
-
+                img_add_checklist.setImageResource(R.drawable.ic_add_to_list_white)
+                tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(2)))
             }
             3 -> {
                 backBtn.setImageResource(R.drawable.ic_back_red)
@@ -773,6 +706,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 btn_color.setImageResource(R.drawable.ic_color_red)
                 btn_delete.setImageResource(R.drawable.ic_delete_red)
                 btn_reminder.setImageResource(R.drawable.ic_reminder_red)
+                img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
+                tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
             4 -> {
 
@@ -781,6 +716,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 btn_color.setImageResource(R.drawable.ic_color_green)
                 btn_delete.setImageResource(R.drawable.ic_delete_green)
                 btn_reminder.setImageResource(R.drawable.ic_reminder_green)
+                img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
+                tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
             5 -> {
                 backBtn.setImageResource(R.drawable.ic_back_blue)
@@ -788,6 +725,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 btn_color.setImageResource(R.drawable.ic_color_blue)
                 btn_delete.setImageResource(R.drawable.ic_delete_blue)
                 btn_reminder.setImageResource(R.drawable.ic_reminder_blue)
+                img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
+                tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
             6 -> {
                 backBtn.setImageResource(R.drawable.ic_back_yellow)
@@ -795,6 +734,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 btn_color.setImageResource(R.drawable.ic_color_yellow)
                 btn_delete.setImageResource(R.drawable.ic_delete_yellow)
                 btn_reminder.setImageResource(R.drawable.ic_reminder_yellow)
+                img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
+                tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
             7 -> {
                 backBtn.setImageResource(R.drawable.ic_back_pink)
@@ -802,6 +743,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 btn_color.setImageResource(R.drawable.ic_color_pink)
                 btn_delete.setImageResource(R.drawable.ic_delete_pink)
                 btn_reminder.setImageResource(R.drawable.ic_reminder_pink)
+                img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
+                tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
         }
 
@@ -809,8 +752,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
     }
 
     private fun handleBackButtonPressed() {
-        if (et_todo.text.toString() != primaryText)
-            isChange = isChange.or(true)
+//        if (et_todo.text.toString() != primaryText)
+//            isChange = isChange.or(true)
         if (isChange) {
             val bottomSheetDialog =
                 BottomSheetDialog(requireContext(), R.style.CustomBottomSheetDialog)
@@ -822,11 +765,11 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
             bottomSheetDialog.btn_cancel_back_dialog.setOnClickListener {
                 bottomSheetDialog.dismiss()
                 resetData()
-                NavHostFragment.findNavController(this@NoteFragment).navigateUp()
+                NavHostFragment.findNavController(this@CheckListFragment).navigateUp()
             }
             bottomSheetDialog.show()
         } else {
-            NavHostFragment.findNavController(this@NoteFragment).navigateUp()
+            NavHostFragment.findNavController(this@CheckListFragment).navigateUp()
             resetData()
         }
     }
@@ -847,33 +790,19 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
         IS_LOCK = false
     }
 
+    private fun setUpRecycler() {
+        rv_check_list.apply {
+            adapter = checkListAdapter
+            layoutManager = LinearLayoutManager(requireContext(),LinearLayoutManager.VERTICAL,false)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-//        noteViewModel.noteId.value = -1
+        noteViewModel.noteId.value = -1
         noteViewModel.alarmId.value = -1
         noteViewModel.setSelectedSortOption(2)
-    }
-
-    private fun getPermissionToRecordAudio() {
-        // 1) Use the support library version ContextCompat.checkSelfPermission(...) to avoid checking the build version since Context.checkSelfPermission(...) is only available in Marshmallow
-        // 2) Always check for permission (even if permission has already been granted) since the user can revoke permissions at any time through Settings
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
-            || ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-            || ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE), RECORD_AUDIO_REQUEST_CODE)
-        }
-    }
-
-    // Callback with the request from calling requestPermissions(...)
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        // Make sure it's our original READ_CONTACTS request
-        if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
-            if (grantResults.size == 3 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
-                //Toast.makeText(this, "Record Audio permission granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(requireContext(), "You must give permissions to use this app. App is exiting.", Toast.LENGTH_SHORT).show()
-                finishAffinity(requireActivity())
-            }
-        }
+        noteViewModel.checkBoxContent.clear()
+        noteViewModel.contentsChange.value = false
     }
 }

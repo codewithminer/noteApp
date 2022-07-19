@@ -10,6 +10,7 @@ import com.aminography.primecalendar.civil.CivilCalendar
 import com.aminography.primecalendar.common.operators.DayOfMonth
 import com.aminography.primecalendar.common.operators.plusAssign
 import com.aminography.primecalendar.persian.PersianCalendar
+import com.example.noteapp.model.data.CheckBoxContent
 import com.example.noteapp.model.data.DateModel
 
 enum class LockStates{
@@ -528,5 +529,26 @@ private fun convertCivilCalendarToPersianCalendar(date: DateModel): Array<Int> {
     return arrayOf(persianCalendar.year, persianCalendar.month, persianCalendar.dayOfMonth)
 }
 
+fun dpFromPx(context: Context, px: Float): Float{
+    return px / context.resources.displayMetrics.density
+}
+fun pxFromDp(context: Context, dp: Float): Float {
+    return dp * context.resources.displayMetrics.density
+}
+
+
+fun convertTextToCheckBox(text: String): ArrayList<CheckBoxContent>{
+    val cb = arrayListOf<CheckBoxContent>()
+    var str = text.substring(0,text.length-3)
+    val t = str.split("!@#")
+    for (i in t.indices){
+        var flag = false
+        val word = t[i]
+        if (word[1] == 'x')
+            flag = true
+        cb.add(CheckBoxContent(word.substring(3,word.length),flag))
+    }
+    return cb
+}
 
 

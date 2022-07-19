@@ -10,6 +10,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.NavDeepLinkBuilder
 import com.example.noteapp.ui.MainActivity
 import com.example.noteapp.R
+import com.example.noteapp.utils.DESTINATION
 
 class AlarmReceiver: BroadcastReceiver() {
 
@@ -24,7 +25,7 @@ class AlarmReceiver: BroadcastReceiver() {
 
         val pendingIntent = NavDeepLinkBuilder(context!!)
             .setGraph(R.navigation.nav_graph)
-            .setDestination(R.id.noteFragment)
+            .setDestination(if (intent.getStringExtra("Destination") == "1") R.id.noteFragment else R.id.checkListFragment)
             .setArguments(bundle)
             .createPendingIntent()
 

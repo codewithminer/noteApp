@@ -9,6 +9,7 @@ import com.aminography.primecalendar.common.operators.DayOfMonth
 import com.aminography.primecalendar.common.operators.plusAssign
 import com.aminography.primecalendar.persian.PersianCalendar
 import com.example.noteapp.model.data.Alarm
+import com.example.noteapp.model.data.CheckBoxContent
 import com.example.noteapp.model.data.DateModel
 import com.example.noteapp.model.data.Note
 import com.example.noteapp.model.data.repository.AlarmRepository
@@ -25,6 +26,9 @@ class NoteViewModel(
     private var alarms: LiveData<List<Alarm>>
 
     var isEmpty: MutableLiveData<Boolean> = MutableLiveData()
+    var checkBoxContent = arrayListOf<CheckBoxContent>()
+    var boxCountCheck: MutableLiveData<Int> = MutableLiveData()
+    var contentsChange: MutableLiveData<Boolean> = MutableLiveData()
 
     var alarmId: MutableLiveData<Int> = MutableLiveData()
     var noteId: MutableLiveData<Int> = MutableLiveData()
@@ -33,6 +37,7 @@ class NoteViewModel(
     private var selectedSortOption: MutableLiveData<Int> = MutableLiveData()
 
     init {
+        contentsChange.value = false
         isEmpty.value = true
         selectedSortOption.value = 2
         notes = noteRepository.getAllNotes()
@@ -50,7 +55,7 @@ class NoteViewModel(
         insertAlarm(alarm)
     }
 
-    fun deleteNote(id: Int) = viewModelScope.launch {
+    fun deleteNote(id: String) = viewModelScope.launch {
         removeNote(id)
     }
 
@@ -62,11 +67,11 @@ class NoteViewModel(
         noteRepository.insertNote(note)
     }
 
-    private suspend fun removeNote(id: Int) {
+    private suspend fun removeNote(id: String) {
             noteRepository.deleteNote(id)
     }
 
-    fun getNote(id: Int): LiveData<Note> = noteRepository.getNote(id)
+    fun getNote(id: String): LiveData<Note> = noteRepository.getNote(id)
 
     fun searchNote(searchedText: String, isLock: Boolean): LiveData<List<Note>> {
         return noteRepository.searchNote(searchedText, isLock)

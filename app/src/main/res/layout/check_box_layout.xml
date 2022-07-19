@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layout_checkbox"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <ImageView
+            android:id="@+id/remove_checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_cancel_black"
+            android:layout_gravity="center"
+            android:layout_marginStart="8dp"/>
+
+        <ImageView
+            android:id="@+id/img_drag"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/ic_drag_black"/>
+
+        <CheckBox
+            android:id="@+id/checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/et_checkbox_list"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLength="1000"
+        android:textColor="@color/gray_black"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="@string/dummyText"
+        android:layout_marginTop="8dp"/>
+
+</LinearLayout>

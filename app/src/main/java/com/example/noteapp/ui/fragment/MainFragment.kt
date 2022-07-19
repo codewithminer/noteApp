@@ -5,14 +5,13 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import android.widget.SearchView
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.noteapp.ui.MainActivity
 import com.example.noteapp.R
@@ -21,7 +20,6 @@ import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.ui.dialog.FilterDialog
 import com.example.noteapp.ui.dialog.FilterDialogListener
 import com.example.noteapp.utils.hideKeyboard
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.fragment_home.*
 
 class MainFragment : Fragment(R.layout.fragment_home) {
@@ -30,10 +28,18 @@ class MainFragment : Fragment(R.layout.fragment_home) {
     lateinit var mainAdapter: MainAdapter
     var selectedOption = 2
 
+    private val rotateOpen: Animation by lazy { AnimationUtils.loadAnimation(requireContext(),R.anim.rotate_open_anim) }
+    private val rotateClose: Animation by lazy { AnimationUtils.loadAnimation(requireContext(),R.anim.rotate_close_anim) }
+    private val fromBottom: Animation by lazy { AnimationUtils.loadAnimation(requireContext(),R.anim.from_bottom_anim) }
+    private val toBottom: Animation by lazy { AnimationUtils.loadAnimation(requireContext(),R.anim.to_bottom_anim) }
+    private var clicked = false
+
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         noteViewModel = (activity as MainActivity).noteViewModel
         setUpRecycler()
+        clicked = false
         noteViewModel.getEmptyState().observe(viewLifecycleOwner, Observer { isEmpty ->
             Log.i("viewmodel", "empty state is $isEmpty")
             if (isEmpty) {
@@ -56,9 +62,9 @@ class MainFragment : Fragment(R.layout.fragment_home) {
             selectedOption = it
         })
 
-        noteViewModel.noteId.observe(viewLifecycleOwner, Observer {
-            Log.i("viewmodel", "object id is $it")
-        })
+//        noteViewModel.noteId.observe(viewLifecycleOwner, Observer {
+//            Log.i("viewmodel", "object id is $it")
+//        })
 
 
         noteViewModel.getNotesForUI().observe(viewLifecycleOwner, Observer { notes ->
@@ -123,14 +129,28 @@ class MainFragment : Fragment(R.layout.fragment_home) {
 
         mainAdapter.setOnItemClickListener {
             view.let { v -> activity?.hideKeyboard(v) }
-            val action = MainFragmentDirections.actionHomeFragmentToNoteFragment(it.id)
+            Log.i("checkbox","xxx->${it.content}")
+            val action = if ( it.content.startsWith("[") && it.content.endsWith("!@#"))
+             MainFragmentDirections.actionMainFragmentToCheckListFragment(it.id)
+            else
+                MainFragmentDirections.actionHomeFragmentToNoteFragment(it.id)
             findNavController().navigate(action)        }
 
-        btn_create_todo.setOnClickListener {
+        btn_fab.setOnClickListener{
+            onAddButtonClicked()
+        }
+
+        btn_create_note.setOnClickListener {
             view.let { activity?.hideKeyboard(it) }
             noteViewModel.alarmId.postValue(-1)
-//            noteViewModel.noteId.postValue(-1)
-            val action = MainFragmentDirections.actionHomeFragmentToNoteFragment(-1)
+            val action = MainFragmentDirections.actionHomeFragmentToNoteFragment("-1")
+            findNavController().navigate(action)
+        }
+
+        btn_create_checklist.setOnClickListener {
+            hideKeyboard()
+            noteViewModel.alarmId.postValue(-1)
+            val action = MainFragmentDirections.actionMainFragmentToCheckListFragment("-1")
             findNavController().navigate(action)
         }
 
@@ -181,7 +201,44 @@ class MainFragment : Fragment(R.layout.fragment_home) {
 
     }
 
+    private fun onAddButtonClicked() {
+        setVisibility(clicked)
+        setAnimation(clicked)
+        setClickable(clicked)
+        clicked = !clicked
+    }
 
+    private fun setAnimation(clicked: Boolean) {
+        if(!clicked){
+            btn_create_note.startAnimation(fromBottom)
+            btn_create_checklist.startAnimation(fromBottom)
+            btn_fab.startAnimation(rotateOpen)
+        }else{
+            btn_create_note.startAnimation(toBottom)
+            btn_create_checklist.startAnimation(toBottom)
+            btn_fab.startAnimation(rotateClose)
+        }
+    }
+
+    private fun setVisibility(clicked: Boolean) {
+        if(!clicked){
+            btn_create_note.visibility = View.VISIBLE
+            btn_create_checklist.visibility = View.VISIBLE
+        }else{
+            btn_create_note.visibility = View.GONE
+            btn_create_checklist.visibility = View.GONE
+        }
+    }
+
+    private fun setClickable(clicked: Boolean){
+        if(!clicked){
+            btn_create_note.isClickable = true
+            btn_create_checklist.isClickable = true
+        }else{
+            btn_create_note.isClickable = false
+            btn_create_checklist.isClickable = false
+        }
+    }
 
     private fun searchDatabase(query: String) {
         val searchQuery = "%$query%"

@@ -11,13 +11,13 @@ interface NoteDao {
     suspend fun insertNote(note: Note)
 
     @Query("DELETE FROM note_tb WHERE id=:id")
-    suspend fun deleteNote(id: Int)
+    suspend fun deleteNote(id: String)
 
     @Query("SELECT * FROM note_tb")
     fun getAllNotes(): LiveData<List<Note>>
 
     @Query("SELECT * FROM note_tb WHERE id=:id")
-    fun getNote(id: Int): LiveData<Note>
+    fun getNote(id: String): LiveData<Note>
 
     @Query("SELECT * FROM note_tb WHERE content LIKE :searchedText and isLock=0")
     fun searchNote(searchedText: String): LiveData<List<Note>>

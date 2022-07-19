@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    android:id="@+id/cb_main_layout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/dark_white"
+    tools:context=".ui.fragment.CheckListFragment">
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
+            style="@style/ThemeActionBar"
+            android:background="@color/dark_white"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="0dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.example.noteapp.ui.toolbar.NoteToolbar
+                android:id="@+id/todo_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                app:mtitle="@string/noteToolbarTitle"/>
+        </com.google.android.material.appbar.AppBarLayout>
+
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_check_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintHeight_max="580dp"
+            app:layout_constrainedHeight="true"
+            android:textSize="16sp"
+            android:hint="@string/noteEditTextHintTitle"
+            android:padding="8dp"
+            app:layout_constraintTop_toBottomOf="@id/appBarLayout"
+            app:layout_constraintBottom_toTopOf="@+id/add_item"
+            android:inputType="text|textMultiLine"
+            android:gravity="top"
+            android:textColor="#FF000000"
+            android:background="@drawable/edit_text_rounded"/>
+
+        <LinearLayout
+            android:id="@+id/add_item"
+            android:layout_width="wrap_content"
+            android:layout_height="60dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            app:layout_constraintTop_toBottomOf="@+id/rv_check_list"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent">
+
+            <ImageView
+                android:id="@+id/img_add_checklist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_add_to_list"/>
+
+            <TextView
+                android:id="@+id/tv_add_checklist"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_gravity="center_vertical"
+                android:text="اضافه کردن به لیست"
+                android:textColor="@color/gray_black"
+                android:layout_marginStart="8dp"/>
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/navigation_todo"
+            android:layout_width="match_parent"
+            android:layout_height="?actionBarSize"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+
+            <ImageView
+                android:id="@+id/btn_add_box"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:background="@drawable/ripple_gray"
+                android:src="@drawable/ic_add_box_black"/>
+
+            <ImageView
+                android:id="@+id/btn_color"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:clickable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:background="@drawable/ripple_gray"
+                android:layout_weight="1"
+                android:src="@drawable/ic_color"/>
+
+            <ImageView
+                android:id="@+id/btn_delete"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:clickable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:background="@drawable/ripple_gray"
+                android:layout_weight="1"
+                android:src="@drawable/ic_delete"/>
+
+            <ImageView
+                android:id="@+id/btn_reminder"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:clickable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:background="@drawable/ripple_gray"
+                android:layout_weight="1"
+                android:src="@drawable/ic_reminder"/>
+
+
+        </LinearLayout>
+
+<!--        <com.google.android.material.bottomnavigation.BottomNavigationView-->
+<!--            android:id="@+id/navigation_todo"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            app:menu="@menu/menu_todo"-->
+<!--            app:layout_constraintTop_toBottomOf="@id/et_todo"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent" />-->
+
+
+
+<!--        <Button-->
+<!--            android:id="@+id/btn_save"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginTop="16dp"-->
+<!--            android:layout_marginBottom="16dp"-->
+<!--            android:layout_marginRight="42dp"-->
+<!--            android:layout_marginLeft="42dp"-->
+<!--            app:layout_constraintTop_toBottomOf="@id/et_todo"-->
+<!--            app:layout_constraintStart_toStartOf="parent"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            android:text="ذخیره"/>-->
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

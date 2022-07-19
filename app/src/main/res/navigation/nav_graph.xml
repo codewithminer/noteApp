@@ -17,6 +17,14 @@
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_mainFragment_to_checkListFragment"
+            app:destination="@id/checkListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+
     </fragment>
 
     <fragment
@@ -33,7 +41,7 @@
             app:popUpToInclusive="true" />
         <argument
             android:name="id"
-            app:argType="integer" />
+            app:argType="string" />
         <action
             android:id="@+id/action_noteFragment_to_showContentFragment"
             app:destination="@id/showContentFragment"
@@ -54,6 +62,24 @@
             app:destination="@id/noteFragment"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
+
+    </fragment>
+    <fragment
+        android:id="@+id/checkListFragment"
+        android:name="com.example.noteapp.ui.fragment.CheckListFragment"
+        android:label="fragment_checklist"
+        tools:layout="@layout/fragment_checklist" >
+        <action
+            android:id="@+id/action_checkListFragment_to_mainFragment"
+            app:destination="@id/mainFragment"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right"
+            app:popUpTo="@id/mainFragment"
+            app:popUpToInclusive="true" />
+
+        <argument
+            android:name="id"
+            app:argType="string" />
 
     </fragment>
 </navigation>

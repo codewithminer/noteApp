@@ -7,3 +7,6 @@ var Heading = false
 
 var final_text = ""
 var COLOR_INDEX = 1
+var IS_LOCK = false
+
+var DESTINATION = 1

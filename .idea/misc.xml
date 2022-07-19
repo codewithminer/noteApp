@@ -59,6 +59,7 @@
         <entry key="app/src/main/res/drawable/ic_add_box_red.xml" value="0.3398148148148148" />
         <entry key="app/src/main/res/drawable/ic_add_box_white.xml" value="0.3398148148148148" />
         <entry key="app/src/main/res/drawable/ic_add_box_yellow.xml" value="0.3398148148148148" />
+        <entry key="app/src/main/res/drawable/ic_add_to_list_white.xml" value="0.22760416666666666" />
         <entry key="app/src/main/res/drawable/ic_alarm_black.xml" value="0.33611111111111114" />
         <entry key="app/src/main/res/drawable/ic_alarm_blue.xml" value="0.3398148148148148" />
         <entry key="app/src/main/res/drawable/ic_alarm_green.xml" value="0.33611111111111114" />
@@ -90,6 +91,7 @@
         <entry key="app/src/main/res/drawable/ic_delete_red.xml" value="0.33611111111111114" />
         <entry key="app/src/main/res/drawable/ic_delete_white.xml" value="0.24427083333333333" />
         <entry key="app/src/main/res/drawable/ic_delete_yellow.xml" value="0.33611111111111114" />
+        <entry key="app/src/main/res/drawable/ic_drag_white.xml" value="0.31574074074074077" />
         <entry key="app/src/main/res/drawable/ic_edit.xml" value="0.33611111111111114" />
         <entry key="app/src/main/res/drawable/ic_edit_black.xml" value="0.33611111111111114" />
         <entry key="app/src/main/res/drawable/ic_lock.xml" value="0.3398148148148148" />
@@ -128,6 +130,7 @@
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.36614583333333334" />
         <entry key="app/src/main/res/layout/add_box_layout.xml" value="0.33" />
         <entry key="app/src/main/res/layout/back_dialog_layout.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/check_box_layout.xml" value="0.33" />
         <entry key="app/src/main/res/layout/color_dialog_layout.xml" value="0.36614583333333334" />
         <entry key="app/src/main/res/layout/date_picker.xml" value="0.36614583333333334" />
         <entry key="app/src/main/res/layout/date_picker_layout.xml" value="0.36614583333333334" />
@@ -136,19 +139,24 @@
         <entry key="app/src/main/res/layout/dialog_picker.xml" value="0.36614583333333334" />
         <entry key="app/src/main/res/layout/empty_state.xml" value="0.33" />
         <entry key="app/src/main/res/layout/filter_layout.xml" value="0.33" />
-        <entry key="app/src/main/res/layout/fragment_home.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/fragment_checklist.xml" value="0.3609375" />
+        <entry key="app/src/main/res/layout/fragment_home.xml" value="0.4217207334273625" />
         <entry key="app/src/main/res/layout/fragment_note.xml" value="0.3609375" />
         <entry key="app/src/main/res/layout/fragment_show_content.xml" value="0.20677083333333332" />
         <entry key="app/src/main/res/layout/fragment_todo.xml" value="0.33" />
         <entry key="app/src/main/res/layout/home_items.xml" value="0.516295025728988" />
+        <entry key="app/src/main/res/layout/item_recording.xml" value="0.5" />
         <entry key="app/src/main/res/layout/lock_dialog_layout.xml" value="0.359375" />
         <entry key="app/src/main/res/layout/lock_input_design_layout.xml" value="0.33" />
         <entry key="app/src/main/res/layout/locked_note_layout.xml" value="0.359375" />
+        <entry key="app/src/main/res/layout/record_list.xml" value="0.3609375" />
+        <entry key="app/src/main/res/layout/recorder_dialog_layout.xml" value="0.359375" />
         <entry key="app/src/main/res/layout/reminder.xml" value="0.36041666666666666" />
         <entry key="app/src/main/res/layout/reminder_layout.xml" value="0.37621023513139695" />
         <entry key="app/src/main/res/layout/reminderrrrr.xml" value="0.36041666666666666" />
         <entry key="app/src/main/res/layout/save_dialog.xml" value="0.36614583333333334" />
         <entry key="app/src/main/res/layout/sl_persian_date_picker.xml" value="0.36614583333333334" />
+        <entry key="app/src/main/res/layout/test.xml" value="0.359375" />
         <entry key="app/src/main/res/layout/time_picker.xml" value="0.36614583333333334" />
         <entry key="app/src/main/res/layout/time_picker_layout.xml" value="0.33" />
         <entry key="app/src/main/res/layout/toolbar.xml" value="0.33" />
