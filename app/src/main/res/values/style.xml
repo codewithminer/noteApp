@@ -43,4 +43,16 @@
         <item name="android:colorControlHighlight">#3db5ea</item>
     </style>
 
+    <style name="WhiteSeekBar" parent="Widget.AppCompat.SeekBar">
+        <item name="android:progressBackgroundTint">#686868</item>
+        <item name="android:progressTint">#414141</item>
+        <item name="android:thumbTint">#414141</item>
+    </style>
+
+    <style name="BlackSeekBar" parent="Widget.AppCompat.SeekBar">
+        <item name="android:progressBackgroundTint">#8C8C8C</item>
+        <item name="android:progressTint">#DBDBDB</item>
+        <item name="android:thumbTint">#DBDBDB</item>
+    </style>
+
 </resources>

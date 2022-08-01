@@ -2,7 +2,9 @@ package com.example.noteapp.utils
 
 import android.app.Activity
 import android.content.Context
+import android.content.res.Resources
 import android.util.Log
+import android.util.TypedValue
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.fragment.app.Fragment
@@ -551,4 +553,7 @@ fun convertTextToCheckBox(text: String): ArrayList<CheckBoxContent>{
     return cb
 }
 
-
+val Number.toPx get() = TypedValue.applyDimension(
+    TypedValue.COMPLEX_UNIT_DIP,
+    this.toFloat(),
+    Resources.getSystem().displayMetrics)

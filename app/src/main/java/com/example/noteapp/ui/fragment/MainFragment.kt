@@ -134,7 +134,8 @@ class MainFragment : Fragment(R.layout.fragment_home) {
              MainFragmentDirections.actionMainFragmentToCheckListFragment(it.id)
             else
                 MainFragmentDirections.actionHomeFragmentToNoteFragment(it.id)
-            findNavController().navigate(action)        }
+            findNavController().navigate(action)
+        }
 
         btn_fab.setOnClickListener{
             onAddButtonClicked()

@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout
+    android:id="@+id/note_main_layout"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/edit_text_rounded"
     tools:context=".ui.fragment.NoteFragment">
 
 
@@ -30,19 +32,38 @@
                 app:mtitle="@string/noteToolbarTitle" />
         </com.google.android.material.appbar.AppBarLayout>
 
-        <EditText
-            android:id="@+id/et_todo"
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:textSize="16sp"
-            android:hint="@string/noteEditTextHintTitle"
-            android:padding="8dp"
             app:layout_constraintTop_toBottomOf="@id/appBarLayout"
-            app:layout_constraintBottom_toTopOf="@id/navigation_todo"
-            android:inputType="text|textMultiLine"
-            android:gravity="top"
-            android:textColor="#FF000000"
-            android:background="@drawable/edit_text_rounded"/>
+            app:layout_constraintBottom_toTopOf="@+id/navigation_todo">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <EditText
+                    android:id="@+id/et_todo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:hint="@string/noteEditTextHintTitle"
+                    android:padding="8dp"
+                    android:inputType="text|textMultiLine"
+                    android:gravity="top"
+                    android:textColor="#FF000000"
+                    android:background="@drawable/edit_text_rounded"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_record"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
+
 
         <LinearLayout
             android:id="@+id/navigation_todo"
@@ -51,7 +72,6 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:clickable="true"
-            app:layout_constraintTop_toBottomOf="@+id/et_todo"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent">
@@ -103,31 +123,6 @@
 
 
         </LinearLayout>
-
-<!--        <com.google.android.material.bottomnavigation.BottomNavigationView-->
-<!--            android:id="@+id/navigation_todo"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            app:menu="@menu/menu_todo"-->
-<!--            app:layout_constraintTop_toBottomOf="@id/et_todo"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent" />-->
-
-
-
-<!--        <Button-->
-<!--            android:id="@+id/btn_save"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_marginTop="16dp"-->
-<!--            android:layout_marginBottom="16dp"-->
-<!--            android:layout_marginRight="42dp"-->
-<!--            android:layout_marginLeft="42dp"-->
-<!--            app:layout_constraintTop_toBottomOf="@id/et_todo"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintEnd_toEndOf="parent"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"-->
-<!--            android:text="ذخیره"/>-->
-
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

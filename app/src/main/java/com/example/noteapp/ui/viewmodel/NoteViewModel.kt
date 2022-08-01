@@ -8,10 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.aminography.primecalendar.common.operators.DayOfMonth
 import com.aminography.primecalendar.common.operators.plusAssign
 import com.aminography.primecalendar.persian.PersianCalendar
-import com.example.noteapp.model.data.Alarm
-import com.example.noteapp.model.data.CheckBoxContent
-import com.example.noteapp.model.data.DateModel
-import com.example.noteapp.model.data.Note
+import com.example.noteapp.model.data.*
 import com.example.noteapp.model.data.repository.AlarmRepository
 import com.example.noteapp.model.data.repository.NoteRepository
 import com.example.noteapp.utils.setPersianNumber
@@ -35,6 +32,10 @@ class NoteViewModel(
 
     var selectedItemToDelete: MutableLiveData<Int> = MutableLiveData()
     private var selectedSortOption: MutableLiveData<Int> = MutableLiveData()
+
+//    var recordingList = arrayListOf<Recording>()
+    var recordingList: MutableLiveData<List<Recording>> = MutableLiveData()
+    var recordPosition: Int = 0
 
     init {
         contentsChange.value = false

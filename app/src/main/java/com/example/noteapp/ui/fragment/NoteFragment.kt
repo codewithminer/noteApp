@@ -2,19 +2,27 @@ package com.example.noteapp.ui.fragment
 
 import android.Manifest
 import android.app.*
-import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
+import android.content.*
 import android.content.pm.PackageManager
+import android.content.res.Resources
+import android.database.Cursor
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.provider.MediaStore
+import android.provider.SyncStateContract.Helpers.insert
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
+import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.app.ActivityCompat.finishAffinity
@@ -28,10 +36,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.aminography.primecalendar.persian.PersianCalendar
 import com.example.noteapp.ui.MainActivity
 import com.example.noteapp.R
+import com.example.noteapp.adapter.RecordAdapter
+import com.example.noteapp.adapter.RecorderAdapter
 import com.example.noteapp.adapter.ReminderAdapter
 import com.example.noteapp.model.data.Alarm
 import com.example.noteapp.model.data.DateModel
 import com.example.noteapp.model.data.Note
+import com.example.noteapp.model.data.Recording
 import com.example.noteapp.receiver.AlarmReceiver
 import com.example.noteapp.ui.dialog.LockDialog
 import com.example.noteapp.ui.dialog.LockDialogListener
@@ -45,13 +56,32 @@ import kotlinx.android.synthetic.main.back_dialog_layout.*
 import kotlinx.android.synthetic.main.color_dialog_layout.*
 import kotlinx.android.synthetic.main.delete_dialog_layout.*
 import kotlinx.android.synthetic.main.fragment_note.*
+import kotlinx.android.synthetic.main.item_recording.view.*
 import kotlinx.android.synthetic.main.reminder.*
+import kotlinx.android.synthetic.main.take_image_dialog.*
 import kotlinx.android.synthetic.main.toolbar.*
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.*
+import kotlin.collections.ArrayList
+import androidx.core.app.ActivityCompat.startActivityForResult
+import androidx.core.content.ContentResolverCompat
+import androidx.core.app.ActivityCompat.startActivityForResult
+import android.R.attr.thumbnail
+import android.R.attr.data
 
-class NoteFragment : Fragment(R.layout.fragment_note) {
+
+
+
+
+
+
+
+
+
+
+class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderCallBack {
 
     private val args: NoteFragmentArgs by navArgs()
     lateinit var noteViewModel: NoteViewModel
@@ -72,9 +102,28 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
     private var mediaRecorder: MediaRecorder? = null
     private var state: Boolean = false
     private var fileName: String? = null
+
     private var recordingStopped: Boolean = false
+    private var recordAdapter: RecordAdapter? = null
 
     private val RECORD_AUDIO_REQUEST_CODE = 101
+    private val CAMERA_REQUEST_CODE = 102
+
+    private var mediaPlayer: MediaPlayer? = null
+    private var lastProgress = 0
+    private val mHandler = Handler()
+    private var isPlaying = false
+    private var last_index = -1
+
+    lateinit var recorderAdapter: RecorderAdapter
+    var recordNumber = 0
+    val recordingList = arrayListOf<Recording>()
+    val handler = Handler()
+
+    private var imageFileName: String? = null
+    var imageNumber = 0
+    var values: ContentValues? = null
+    var imageUri: Uri? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -111,6 +160,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 }
             })
         }
+
+        getAllRecording()
 
         hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
@@ -318,6 +369,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                         }
                         mediaRecorder = null
                         Toast.makeText(requireContext(), "stop recording.", Toast.LENGTH_SHORT).show()
+                        addRecord()
                     }
                 }).show()
 
@@ -331,8 +383,8 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 if (!file.exists()) {
                     file.mkdirs()
                 }
-
-                fileName = root.absolutePath + "/NoteApplication/${noteID}/Audios/" + (System.currentTimeMillis().toString() + ".mp3")
+                recordNumber++
+                fileName = root.absolutePath + "/NoteApplication/${noteID}/Audios/" + "$recordNumber.mp3"
                 Log.d("filename", fileName.toString())
                 mediaRecorder!!.setOutputFile(fileName)
                 mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
@@ -346,10 +398,49 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
 
                 bottomSheetDialog.dismiss()
             }
-            bottomSheetDialog.tv_add_photo.setOnClickListener {
-                stopRecording()
-            }
 
+            bottomSheetDialog.tv_add_photo.setOnClickListener {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    getPermissionToTakePhoto()
+                }
+                val imageBottomSheetDialog = BottomSheetDialog(
+                    requireContext(),R.style.CustomBottomSheetDialog
+                )
+                imageBottomSheetDialog.setContentView(R.layout.take_image_dialog)
+
+                imageBottomSheetDialog.img_camera.setOnClickListener {
+                    values = ContentValues()
+                    values!!.put(MediaStore.Images.Media.TITLE, "New Picture")
+                    values!!.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera")
+                    imageUri = requireContext().contentResolver.insert(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
+                    )
+                    val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                    intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri)
+                    startActivityForResult(intent, CAMERA_REQUEST_CODE)
+
+//                    val fileOutPutStream = FileOutputStream(imageFileName)
+//                    val bitmap = data.extras?.get("data") as Bitmap
+//                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutPutStream)
+//                    fileOutPutStream.flush()
+//                    fileOutPutStream.close()
+//                    val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//                    intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri)
+//                    startActivityForResult(intent, CAMERA_REQUEST_CODE)
+//                    val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//                    startActivityForResult(cameraIntent, CAMERA_REQUEST_CODE)
+                    imageBottomSheetDialog.dismiss()
+                }
+                imageBottomSheetDialog.img_gallery.setOnClickListener {
+                    val intent = Intent(Intent.ACTION_PICK)
+                    intent.type = "image/*"
+                    startActivityForResult(intent, GALLERY_REQUEST_CODE)
+                    imageBottomSheetDialog.dismiss()
+                }
+
+                imageBottomSheetDialog.show()
+                bottomSheetDialog.dismiss()
+            }
             bottomSheetDialog.show()
         }
 
@@ -358,6 +449,9 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
             final_text = et_todo.text.toString()
             COLOR_INDEX = colorIndex
             IS_LOCK = isLock
+            recordingList.clear()
+            if (isPlaying)
+                stopPlaying()
             findNavController().navigate(NoteFragmentDirections.actionNoteFragmentToShowContentFragment())
         }
 
@@ -394,16 +488,220 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 override fun afterTextChanged(p0: Editable?) {
                 }
             })
+
+        recorderAdapter.setOnItemClickListener {
+//            Log.i("Recorder","get record")
+//            mediaPlayer = MediaPlayer()
+//            playRecord(it.uri)
+        }
+        noteViewModel.recordingList.observe(viewLifecycleOwner, Observer { records ->
+            Log.i("Recorder", "call observer")
+            records?.let {
+                recorderAdapter.differ.submitList(records.toMutableList())
+            }
+        })
+
     }
 
-    private fun stopRecording(){
-        if(state){
-            mediaRecorder?.stop()
-            mediaRecorder?.release()
-            state = false
-        }else{
-            Toast.makeText(requireContext(), "You are not recording right now!", Toast.LENGTH_SHORT).show()
+    override fun removeRecord(record: Recording, position: Int) {
+        Log.i("Recorder", "delete: $position")
+//        val file = File(record.uri)
+//        file.delete()
+//        recorderAdapter.differ.currentList.removeAt(position)
+//        noteViewModel.recordingList.removeAt(position)
+//        noteViewModel.recordingList.value?.toMutableList()?.removeAt(position)
+
+        if (position == last_index){
+            stopPlaying()
+            noteViewModel.recordPosition = 0
         }
+        noteViewModel.recordingList.postValue(
+            noteViewModel.recordingList.value!!.toMutableList().apply {
+//                remove(record)
+                removeAt(position)
+            }
+        )
+//        recorderAdapter.differ.submitList(noteViewModel.recordingList)
+//        recorderAdapter.notifyItemRemoved(position)
+//        recorderAdapter.notifyDataSetChanged()
+//        for (i in 0 until recorderAdapter.differ.currentList.size){
+//            Log.i("Recorder","item: ${recorderAdapter.differ.currentList[i].fileName}")
+//        }
+//        for (i in 0 until noteViewModel.recordingList.size){
+//            itemView.seekBar.tag = position
+//            Log.i("Recorder", noteViewModel.recordingList[i].fileName)
+//        }
+    }
+    override fun getRecordItems(
+        record: Recording,
+        holder: RecorderAdapter.ViewHolder,
+        itemView: View,
+        position: Int
+    ) {
+        Log.i("Recorder","get record: $position")
+        if(isPlaying) {
+            noteViewModel.recordPosition = 0
+            stopPlaying()
+            if (last_index == holder.adapterPosition){
+                if (record.isPlaying){
+                    record.isPlaying = false
+                    isPlaying = false
+                    noteViewModel.recordPosition = lastProgress
+                    if (colorIndex == 1)
+                        itemView.img_view_play.setImageResource(R.drawable.ic_play_white)
+                    else
+                        itemView.img_view_play.setImageResource(R.drawable.ic_play_black)
+//                    recorderAdapter.notifyItemChanged(last_index)
+                }else{
+                    playRecord(record.uri, holder, itemView, holder.adapterPosition)
+                    record.isPlaying = true
+                    if (colorIndex == 1)
+                        itemView.img_view_play.setImageResource(R.drawable.ic_stop_white)
+                    else
+                        itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
+                }
+            }else{
+                Log.i("Recorder", "notify last_index: $last_index")
+                handler.removeCallbacksAndMessages(null)
+                if (last_index != -1){
+                    recorderAdapter.differ.currentList[last_index].isPlaying = false
+                    recorderAdapter.notifyItemChanged(last_index)
+                }
+                playRecord(record.uri, holder, itemView, holder.adapterPosition)
+                record.isPlaying = true
+                if (colorIndex == 1)
+                    itemView.img_view_play.setImageResource(R.drawable.ic_stop_white)
+                else
+                    itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
+            }
+        }else{
+            handler.removeCallbacksAndMessages(null)
+            if (last_index != holder.adapterPosition){
+                noteViewModel.recordPosition = 0
+                if (last_index != -1)
+                    recorderAdapter.notifyItemChanged(last_index)
+            }
+            playRecord(record.uri,holder, itemView, holder.adapterPosition)
+            record.isPlaying = true
+            if (colorIndex == 1)
+                itemView.img_view_play.setImageResource(R.drawable.ic_stop_white)
+            else
+                itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
+        }
+    }
+    private fun playRecord(
+        uri: String,
+        holder: RecorderAdapter.ViewHolder,
+        itemView: View,
+        position: Int
+    ){
+        mediaPlayer = MediaPlayer()
+        try {
+            mediaPlayer!!.setDataSource(uri)
+            mediaPlayer!!.prepare()
+            mediaPlayer!!.start()
+        } catch (e: IOException) {
+            Log.e("LOG_TAG", "prepare() failed")
+        }
+        //showing the pause button
+//        seekBar!!.max = mediaPlayer!!.duration
+        isPlaying = true
+        if (noteViewModel.recordPosition != 0){
+            Log.i("Recorder", "seekTo")
+            mediaPlayer!!.seekTo(noteViewModel.recordPosition)
+        }
+        mediaPlayer!!.setOnCompletionListener(MediaPlayer.OnCompletionListener {
+            Log.i("Recorder", "finish record")
+            Log.i("Recorder", "pos -> $position")
+            Log.i("Recorder", "holder -> ${holder.adapterPosition}")
+            noteViewModel.recordPosition = 0
+            stopPlaying()
+            isPlaying = false
+            recorderAdapter.differ.currentList[holder.adapterPosition].isPlaying = false
+            recorderAdapter.notifyItemChanged(holder.adapterPosition)
+        })
+        last_index = holder.adapterPosition
+        itemView.seekBar.max = mediaPlayer!!.duration
+
+
+        handler.postDelayed(object: Runnable{
+            override fun run() {
+                try {
+//                    itemView.seekBar.tag = holder.adapterPosition
+                    if (mediaPlayer!=null && itemView.seekBar.tag == position){
+                        itemView.seekBar.progress = mediaPlayer!!.currentPosition
+                        lastProgress = mediaPlayer!!.currentPosition
+                        last_index = holder.adapterPosition
+                        Log.i("Recorder", "holder.adapterPosition: ${last_index}")
+                        handler.postDelayed(this, 100)
+                    }
+                }catch (e: Exception){
+                    itemView.seekBar.progress = 0
+                    recorderAdapter.notifyItemChanged(holder.adapterPosition)
+                }
+            }
+        },0)
+
+        itemView.seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener{
+            override fun onProgressChanged(p0: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (mediaPlayer !=null && fromUser)
+                    mediaPlayer!!.seekTo(progress)
+            }
+            override fun onStartTrackingTouch(p0: SeekBar?) {
+            }
+            override fun onStopTrackingTouch(p0: SeekBar?) {
+            }
+        })
+    }
+
+    private fun getAllRecording() {
+//        val recordArrayList = ArrayList<Recording>()
+        val systemHeight = Resources.getSystem().displayMetrics.heightPixels
+        Log.i("Recording", "height integer $systemHeight")
+        val listLayoutParams: LinearLayout.LayoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,systemHeight/1.5.toInt(),
+        )
+        Log.i("Recording", listLayoutParams.height.toString())
+        recorderAdapter = RecorderAdapter(noteViewModel,this)
+        rv_record.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+//        recordAdapter!!.setListener(this)
+        rv_record.layoutParams = listLayoutParams
+        rv_record.adapter = recorderAdapter
+
+        val root = android.os.Environment.getExternalStorageDirectory()
+        val path = root.absolutePath + "/NoteApplication/${noteID}/Audios"
+        val directory = File(path)
+        val files = directory.listFiles()
+        if (files != null){
+            val nameArray = arrayListOf<Int>()
+            for (i in files.indices){
+//                recordNumber++
+                val fileName = files[i].name
+                val tempName = fileName.substring(0, fileName.length-4)
+                nameArray.add(tempName.toInt())
+                Log.i("Recorder", tempName)
+            }
+            nameArray.sort()
+            recordNumber = nameArray[nameArray.lastIndex]
+
+            for (i in 0 until nameArray.size){
+                Log.i("Recorder", nameArray[i].toString())
+                val recordingUri = root.absolutePath + "/NoteApplication/${noteID}/Audios/" + "${nameArray[i]}.mp3"
+//                recordArrayList.add(Recording(recordingUri, fileName, false))
+                recordingList.add(Recording(recordingUri, nameArray[i].toString(), false))
+            }
+            noteViewModel.recordingList.postValue(recordingList)
+//            recorderAdapter.differ.submitList(noteViewModel.recordingList.value)
+        }
+    }
+
+    private fun addRecord(){
+//        recordAdapter?.addItem(Recording(fileName!!,"dummy", false))
+        recordingList.add(Recording(fileName!!, "dummy", false))
+        noteViewModel.recordingList.postValue(recordingList)
+//        noteViewModel.recordingList.value?.toMutableList()?.add(Recording(fileName!!, "dummy", false))
+//        recorderAdapter.differ.submitList(noteViewModel.recordingList.value)
+//        recorderAdapter.notifyItemInserted(noteViewModel.recordingList.value!!.size)
     }
 
     private fun createNotificationChannel() {
@@ -727,6 +1025,7 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
 
     private fun setUpNoteFragmentDesign(index: Int) {
 
+        note_main_layout.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
         et_todo.setBackgroundColor(Color.parseColor(getBackgroundColor(index)))
         et_todo.setTextColor(Color.parseColor(getForegroundColor(index)))
         toolbarTitleTv.setTextColor(Color.parseColor(getForegroundColor(index)))
@@ -804,8 +1103,10 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
                 btn_reminder.setImageResource(R.drawable.ic_reminder_pink)
             }
         }
-
-
+        if (isPlaying)
+            stopPlaying()
+        COLOR_INDEX = index
+        recorderAdapter.notifyDataSetChanged()
     }
 
     private fun handleBackButtonPressed() {
@@ -829,6 +1130,10 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
             NavHostFragment.findNavController(this@NoteFragment).navigateUp()
             resetData()
         }
+        if (mediaPlayer != null)
+            stopPlaying()
+        noteViewModel.recordingList.postValue(null)
+        noteViewModel.recordPosition = 0
     }
 
     private fun convertPersianCalendarToCivilCalendar(date: DateModel): Array<Int> {
@@ -852,15 +1157,33 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
 //        noteViewModel.noteId.value = -1
         noteViewModel.alarmId.value = -1
         noteViewModel.setSelectedSortOption(2)
+        noteViewModel.recordingList.postValue(null)
+        noteViewModel.recordPosition = 0
     }
 
     private fun getPermissionToRecordAudio() {
-        // 1) Use the support library version ContextCompat.checkSelfPermission(...) to avoid checking the build version since Context.checkSelfPermission(...) is only available in Marshmallow
-        // 2) Always check for permission (even if permission has already been granted) since the user can revoke permissions at any time through Settings
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
-            || ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-            || ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+            || ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+            || ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE), RECORD_AUDIO_REQUEST_CODE)
+        }
+    }
+
+    private fun getPermissionToTakePhoto(){
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CAMERA
+        )!= PackageManager.PERMISSION_GRANTED){
+            requestPermissions(arrayOf(Manifest.permission.CAMERA),CAMERA_REQUEST_CODE)
         }
     }
 
@@ -868,12 +1191,99 @@ class NoteFragment : Fragment(R.layout.fragment_note) {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         // Make sure it's our original READ_CONTACTS request
         if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
-            if (grantResults.size == 3 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.size == 3 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED &&
+                grantResults[1] == PackageManager.PERMISSION_GRANTED &&
+                grantResults[2] == PackageManager.PERMISSION_GRANTED) {
                 //Toast.makeText(this, "Record Audio permission granted", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(requireContext(), "You must give permissions to use this app. App is exiting.", Toast.LENGTH_SHORT).show()
-                finishAffinity(requireActivity())
+                Toast.makeText(requireContext(), "You must give permissions to use this app", Toast.LENGTH_SHORT).show()
+//                finishAffinity(requireActivity())
+            }
+        }
+        if (requestCode == CAMERA_REQUEST_CODE){
+            if (grantResults.size == 1 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED){
+
+            }else{
+                Toast.makeText(requireContext(), "You must give permissions to use this app", Toast.LENGTH_SHORT).show()
             }
         }
     }
+
+    private fun stopPlaying() {
+        try {
+            mediaPlayer!!.stop()
+            mediaPlayer!!.reset()
+            mediaPlayer!!.release()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        Log.i("Recorder", "onStop called mediaPlayer=null and isPlaying=false")
+        mediaPlayer = null
+        isPlaying = false
+    }
+
+    fun dpFromPx(context: Context, px: Float): Float {
+        Log.i("Recording", " density: ${context.resources.displayMetrics.density}")
+        Log.i("Recording", " pixel: ${px / context.resources.displayMetrics.density}")
+        return px / context.resources.displayMetrics.density
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == Activity.RESULT_OK && requestCode == CAMERA_REQUEST_CODE ){
+            Log.i("result", "camera")
+            val root = android.os.Environment.getExternalStorageDirectory()
+            val file = File(root.absolutePath + "/NoteApplication/${noteID}/Images/")
+            if (!file.exists()) {
+                file.mkdirs()
+            }
+            imageNumber++
+            imageFileName = root.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
+            try {
+                val thumbnail = MediaStore.Images.Media.getBitmap(
+                    requireContext().contentResolver, imageUri
+                )
+                val imageurl = getRealPathFromURI(imageUri)
+                Log.i("result", imageurl.toString())
+                val fileOutPutStream = FileOutputStream(imageFileName)
+    //            val bitmap = data.extras?.get("data") as Bitmap
+                thumbnail.compress(Bitmap.CompressFormat.PNG, 95, fileOutPutStream)
+                fileOutPutStream.flush()
+                fileOutPutStream.close()
+    //                imgView.setImageBitmap(thumbnail)
+            } catch (e: java.lang.Exception) {
+                e.printStackTrace()
+            }
+
+        }
+        if (resultCode == Activity.RESULT_OK && requestCode == GALLERY_REQUEST_CODE){
+//            imageView.setImageURI(data?.data) // handle chosen image
+            val root = android.os.Environment.getExternalStorageDirectory()
+            val file = File(root.absolutePath + "/NoteApplication/${noteID}/Images/")
+            if (!file.exists()) {
+                file.mkdirs()
+            }
+            imageNumber++
+            imageFileName = root.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
+            val fileOutPutStream = FileOutputStream(imageFileName)
+            val uri: Uri? = data?.data
+            val bit = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
+            bit.compress(Bitmap.CompressFormat.PNG, 95, fileOutPutStream)
+            fileOutPutStream.flush()
+            fileOutPutStream.close()
+        }
+    }
+
+    fun getRealPathFromURI(contentUri: Uri?): String? {
+        val proj = arrayOf(MediaStore.Images.Media.DATA)
+        val cursor: Cursor = requireActivity().managedQuery(contentUri, proj, null, null, null)
+        val column_index = cursor
+            .getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        cursor.moveToFirst()
+        return cursor.getString(column_index)
+    }
+
 }
+

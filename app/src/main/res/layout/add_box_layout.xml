@@ -6,43 +6,24 @@
     android:padding="6dp">
 
     <ImageView
-        android:id="@+id/img_take_photo"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:src="@drawable/ic_add_photo"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
-
-    <TextView
-        android:id="@+id/tv_take_photo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="گرفتن عکس"
-        android:textSize="18sp"
-        android:textColor="@color/gray_black"
-        app:layout_constraintEnd_toStartOf="@+id/img_take_photo"
-        app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginEnd="12dp"/>
-
-    <ImageView
         android:id="@+id/img_add_photo"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:layout_marginTop="12dp"
         android:src="@drawable/ic_insert_photo"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/img_take_photo"/>
+        app:layout_constraintTop_toTopOf="parent"/>
 
     <TextView
         android:id="@+id/tv_add_photo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="رفتن به گالری"
+        android:text="افزودن تصویر"
         android:layout_marginTop="12dp"
         android:textSize="18sp"
         android:textColor="@color/gray_black"
         app:layout_constraintEnd_toStartOf="@+id/img_add_photo"
-        app:layout_constraintTop_toBottomOf="@id/tv_take_photo"
+        app:layout_constraintTop_toTopOf="parent"
         android:layout_marginEnd="12dp"/>
 
     <ImageView
