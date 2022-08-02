@@ -1,8 +1,0 @@
-- Remove some checkboxes and don't save that, back to checkbox note and click back, you see CHANGE_DIALOG
----------------------------------------------
-- Remove an item from NoteViewModel.recordList showing remove 2 item but that remove 1 item finally (+)
-- If click on two record then two record play together (+)
-- When remove playing record sounds still audible (+)
-- When remove playing record seekBard lost position (+)
-- Go to mark activity and back, you see a lot of record (+)
-----------------------------------------------

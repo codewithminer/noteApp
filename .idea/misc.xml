@@ -122,6 +122,7 @@
         <entry key="app/src/main/res/drawable/ic_share_yellow.xml" value="0.33611111111111114" />
         <entry key="app/src/main/res/drawable/ic_stop_white.xml" value="0.3707692307692308" />
         <entry key="app/src/main/res/drawable/ic_unlock.xml" value="0.3398148148148148" />
+        <entry key="app/src/main/res/drawable/item_image_background.xml" value="0.3685185185185185" />
         <entry key="app/src/main/res/drawable/record_bg_color_black.xml" value="0.3707692307692308" />
         <entry key="app/src/main/res/drawable/record_bg_color_blue.xml" value="0.3707692307692308" />
         <entry key="app/src/main/res/drawable/record_bg_color_green.xml" value="0.3707692307692308" />
@@ -155,6 +156,7 @@
         <entry key="app/src/main/res/layout/fragment_show_content.xml" value="0.20677083333333332" />
         <entry key="app/src/main/res/layout/fragment_todo.xml" value="0.33" />
         <entry key="app/src/main/res/layout/home_items.xml" value="0.516295025728988" />
+        <entry key="app/src/main/res/layout/image_dialog.xml" value="0.359375" />
         <entry key="app/src/main/res/layout/item_image.xml" value="0.359375" />
         <entry key="app/src/main/res/layout/item_recording.xml" value="0.5" />
         <entry key="app/src/main/res/layout/lock_dialog_layout.xml" value="0.359375" />

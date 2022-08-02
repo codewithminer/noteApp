@@ -37,6 +37,8 @@ class NoteViewModel(
     var recordingList: MutableLiveData<List<Recording>> = MutableLiveData()
     var recordPosition: Int = 0
 
+    var imageList: MutableLiveData<List<Image>> = MutableLiveData()
+
     init {
         contentsChange.value = false
         isEmpty.value = true

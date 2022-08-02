@@ -15,7 +15,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.provider.MediaStore
-import android.provider.SyncStateContract.Helpers.insert
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
@@ -25,7 +24,6 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.core.app.ActivityCompat.finishAffinity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -39,15 +37,7 @@ import com.example.noteapp.R
 import com.example.noteapp.adapter.RecordAdapter
 import com.example.noteapp.adapter.RecorderAdapter
 import com.example.noteapp.adapter.ReminderAdapter
-import com.example.noteapp.model.data.Alarm
-import com.example.noteapp.model.data.DateModel
-import com.example.noteapp.model.data.Note
-import com.example.noteapp.model.data.Recording
 import com.example.noteapp.receiver.AlarmReceiver
-import com.example.noteapp.ui.dialog.LockDialog
-import com.example.noteapp.ui.dialog.LockDialogListener
-import com.example.noteapp.ui.dialog.RecorderDialog
-import com.example.noteapp.ui.dialog.RecorderDialogListener
 import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.utils.*
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -64,21 +54,13 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.*
-import kotlin.collections.ArrayList
-import androidx.core.app.ActivityCompat.startActivityForResult
-import androidx.core.content.ContentResolverCompat
-import androidx.core.app.ActivityCompat.startActivityForResult
-import android.R.attr.thumbnail
-import android.R.attr.data
+import com.example.noteapp.adapter.ImageAdapter
+import com.example.noteapp.model.data.*
+import java.io.ByteArrayOutputStream
 
-
-
-
-
-
-
-
-
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import com.example.noteapp.ui.dialog.*
 
 
 class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderCallBack {
@@ -125,6 +107,9 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     var values: ContentValues? = null
     var imageUri: Uri? = null
 
+    lateinit var imageAdapter: ImageAdapter
+    val imageList = arrayListOf<Image>()
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -138,7 +123,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
 
 //        output = Environment.getExternalStorageDirectory().absolutePath + "/recording.mp3"
 //        mediaRecorder.setOutputFile(output)
-        if (args.id != "-1"){
+        if (args.id != "-1") {
             noteID = args.id
             noteViewModel.getNote(args.id).observe(viewLifecycleOwner, Observer { note ->
                 note?.let {
@@ -162,7 +147,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
 
         getAllRecording()
-
+        getAllImages()
         hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
             alarmID = it
@@ -217,8 +202,8 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 BottomSheetDialog(requireContext(), R.style.CustomBottomSheetDialog)
             bottomSheetDialog.setContentView(R.layout.delete_dialog_layout)
             bottomSheetDialog.btn_ok_delete_dialog.setOnClickListener {
-                if (isLock){
-                    LockDialog(requireContext(), object: LockDialogListener{
+                if (isLock) {
+                    LockDialog(requireContext(), object : LockDialogListener {
                         override fun onCreateLock(password: String) {
                         }
 
@@ -238,8 +223,8 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                             NavHostFragment.findNavController(this@NoteFragment).navigateUp()
                         }
 
-                    },LockStates.RemoveLockedNote).show()
-                }else {
+                    }, LockStates.RemoveLockedNote).show()
+                } else {
                     noteViewModel.deleteNote(noteID)
                     noteViewModel.deleteAlarm(alarmID)
                     if (alarmID != -1)
@@ -359,7 +344,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     getPermissionToRecordAudio()
                 }
-                RecorderDialog(requireContext(), object: RecorderDialogListener{
+                RecorderDialog(requireContext(), object : RecorderDialogListener {
                     override fun onStopRecorder() {
                         try {
                             mediaRecorder!!.stop()
@@ -368,7 +353,8 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                             e.printStackTrace()
                         }
                         mediaRecorder = null
-                        Toast.makeText(requireContext(), "stop recording.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "stop recording.", Toast.LENGTH_SHORT)
+                            .show()
                         addRecord()
                     }
                 }).show()
@@ -384,7 +370,8 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                     file.mkdirs()
                 }
                 recordNumber++
-                fileName = root.absolutePath + "/NoteApplication/${noteID}/Audios/" + "$recordNumber.mp3"
+                fileName =
+                    root.absolutePath + "/NoteApplication/${noteID}/Audios/" + "$recordNumber.mp3"
                 Log.d("filename", fileName.toString())
                 mediaRecorder!!.setOutputFile(fileName)
                 mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
@@ -404,7 +391,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                     getPermissionToTakePhoto()
                 }
                 val imageBottomSheetDialog = BottomSheetDialog(
-                    requireContext(),R.style.CustomBottomSheetDialog
+                    requireContext(), R.style.CustomBottomSheetDialog
                 )
                 imageBottomSheetDialog.setContentView(R.layout.take_image_dialog)
 
@@ -500,18 +487,85 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 recorderAdapter.differ.submitList(records.toMutableList())
             }
         })
-
+        noteViewModel.imageList.observe(viewLifecycleOwner, Observer { images ->
+            images?.let {
+                imageAdapter.submitList(images)
+            }
+        })
     }
+
+    private fun getAllImages() {
+        imageAdapter = ImageAdapter { image, pos ->
+            if (pos == -1) {
+                ImageDialog(
+                    requireContext(),
+                    image.originalBitmap
+                ).show()
+            } else {
+                val file = File(image.contentUri)
+                file.delete()
+                Log.i("result",image.contentUri.toString())
+                noteViewModel.imageList.postValue(
+                    noteViewModel.imageList.value?.toMutableList()?.apply {
+                        removeAt(pos)
+                    }
+                )
+            }
+
+        }
+        rv_image.layoutManager = LinearLayoutManager(
+            requireContext(),
+            LinearLayoutManager.HORIZONTAL, false
+        )
+        rv_image.adapter = imageAdapter
+
+        val root = android.os.Environment.getExternalStorageDirectory()
+        val path = root.absolutePath + "/NoteApplication/${noteID}/Images"
+        val directory = File(path)
+        val files = directory.listFiles()
+        if (files != null) {
+            val nameArray = arrayListOf<Int>()
+            for (i in files.indices) {
+                val fileName = files[i].name
+                val tempName = fileName.substring(0, fileName.length - 4)
+                nameArray.add(tempName.toInt())
+                Log.i("Image", tempName)
+            }
+            nameArray.sort()
+            imageNumber = nameArray[nameArray.lastIndex]
+
+            for (i in 0 until nameArray.size) {
+                Log.i("Image", nameArray[i].toString())
+                val imageUri =
+                    root.absolutePath + "/NoteApplication/${noteID}/Images/" + "${nameArray[i]}.png"
+                val file = File(imageUri)
+                val uri = Uri.fromFile(file)
+                val bit = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
+                val scaleWidth = bit.width / 2
+                val scaleHeight = bit.height / 2
+                val downsizedImageBytesBMP: ByteArray = getDownsizedImageBytes(
+                    bit,
+                    scaleWidth,
+                    scaleHeight
+                )!!
+                val bmp2: Bitmap = BitmapFactory.decodeByteArray(
+                    downsizedImageBytesBMP,
+                    0,
+                    downsizedImageBytesBMP.size
+                )
+                imageList.add(Image(UUID.randomUUID().toString(), imageUri, bit, bmp2, "name"))
+            }
+            noteViewModel.imageList.postValue(imageList)
+//            recorderAdapter.differ.submitList(noteViewModel.recordingList.value)
+        }
+    }
+
 
     override fun removeRecord(record: Recording, position: Int) {
         Log.i("Recorder", "delete: $position")
-//        val file = File(record.uri)
-//        file.delete()
-//        recorderAdapter.differ.currentList.removeAt(position)
-//        noteViewModel.recordingList.removeAt(position)
-//        noteViewModel.recordingList.value?.toMutableList()?.removeAt(position)
-
-        if (position == last_index){
+        val file = File(record.uri)
+        file.delete()
+        if (position == last_index) {
             stopPlaying()
             noteViewModel.recordPosition = 0
         }
@@ -521,29 +575,20 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 removeAt(position)
             }
         )
-//        recorderAdapter.differ.submitList(noteViewModel.recordingList)
-//        recorderAdapter.notifyItemRemoved(position)
-//        recorderAdapter.notifyDataSetChanged()
-//        for (i in 0 until recorderAdapter.differ.currentList.size){
-//            Log.i("Recorder","item: ${recorderAdapter.differ.currentList[i].fileName}")
-//        }
-//        for (i in 0 until noteViewModel.recordingList.size){
-//            itemView.seekBar.tag = position
-//            Log.i("Recorder", noteViewModel.recordingList[i].fileName)
-//        }
     }
+
     override fun getRecordItems(
         record: Recording,
         holder: RecorderAdapter.ViewHolder,
         itemView: View,
         position: Int
     ) {
-        Log.i("Recorder","get record: $position")
-        if(isPlaying) {
+        Log.i("Recorder", "get record: $position")
+        if (isPlaying) {
             noteViewModel.recordPosition = 0
             stopPlaying()
-            if (last_index == holder.adapterPosition){
-                if (record.isPlaying){
+            if (last_index == holder.adapterPosition) {
+                if (record.isPlaying) {
                     record.isPlaying = false
                     isPlaying = false
                     noteViewModel.recordPosition = lastProgress
@@ -552,7 +597,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                     else
                         itemView.img_view_play.setImageResource(R.drawable.ic_play_black)
 //                    recorderAdapter.notifyItemChanged(last_index)
-                }else{
+                } else {
                     playRecord(record.uri, holder, itemView, holder.adapterPosition)
                     record.isPlaying = true
                     if (colorIndex == 1)
@@ -560,10 +605,10 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                     else
                         itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
                 }
-            }else{
+            } else {
                 Log.i("Recorder", "notify last_index: $last_index")
                 handler.removeCallbacksAndMessages(null)
-                if (last_index != -1){
+                if (last_index != -1) {
                     recorderAdapter.differ.currentList[last_index].isPlaying = false
                     recorderAdapter.notifyItemChanged(last_index)
                 }
@@ -574,14 +619,14 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 else
                     itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
             }
-        }else{
+        } else {
             handler.removeCallbacksAndMessages(null)
-            if (last_index != holder.adapterPosition){
+            if (last_index != holder.adapterPosition) {
                 noteViewModel.recordPosition = 0
                 if (last_index != -1)
                     recorderAdapter.notifyItemChanged(last_index)
             }
-            playRecord(record.uri,holder, itemView, holder.adapterPosition)
+            playRecord(record.uri, holder, itemView, holder.adapterPosition)
             record.isPlaying = true
             if (colorIndex == 1)
                 itemView.img_view_play.setImageResource(R.drawable.ic_stop_white)
@@ -589,12 +634,13 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
         }
     }
+
     private fun playRecord(
         uri: String,
         holder: RecorderAdapter.ViewHolder,
         itemView: View,
         position: Int
-    ){
+    ) {
         mediaPlayer = MediaPlayer()
         try {
             mediaPlayer!!.setDataSource(uri)
@@ -606,7 +652,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         //showing the pause button
 //        seekBar!!.max = mediaPlayer!!.duration
         isPlaying = true
-        if (noteViewModel.recordPosition != 0){
+        if (noteViewModel.recordPosition != 0) {
             Log.i("Recorder", "seekTo")
             mediaPlayer!!.seekTo(noteViewModel.recordPosition)
         }
@@ -624,31 +670,33 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         itemView.seekBar.max = mediaPlayer!!.duration
 
 
-        handler.postDelayed(object: Runnable{
+        handler.postDelayed(object : Runnable {
             override fun run() {
                 try {
 //                    itemView.seekBar.tag = holder.adapterPosition
-                    if (mediaPlayer!=null && itemView.seekBar.tag == position){
+                    if (mediaPlayer != null && itemView.seekBar.tag == position) {
                         itemView.seekBar.progress = mediaPlayer!!.currentPosition
                         lastProgress = mediaPlayer!!.currentPosition
                         last_index = holder.adapterPosition
                         Log.i("Recorder", "holder.adapterPosition: ${last_index}")
                         handler.postDelayed(this, 100)
                     }
-                }catch (e: Exception){
+                } catch (e: Exception) {
                     itemView.seekBar.progress = 0
                     recorderAdapter.notifyItemChanged(holder.adapterPosition)
                 }
             }
-        },0)
+        }, 0)
 
-        itemView.seekBar.setOnSeekBarChangeListener(object: SeekBar.OnSeekBarChangeListener{
+        itemView.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (mediaPlayer !=null && fromUser)
+                if (mediaPlayer != null && fromUser)
                     mediaPlayer!!.seekTo(progress)
             }
+
             override fun onStartTrackingTouch(p0: SeekBar?) {
             }
+
             override fun onStopTrackingTouch(p0: SeekBar?) {
             }
         })
@@ -659,11 +707,12 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         val systemHeight = Resources.getSystem().displayMetrics.heightPixels
         Log.i("Recording", "height integer $systemHeight")
         val listLayoutParams: LinearLayout.LayoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,systemHeight/1.5.toInt(),
+            LinearLayout.LayoutParams.MATCH_PARENT, systemHeight / 1.5.toInt(),
         )
         Log.i("Recording", listLayoutParams.height.toString())
-        recorderAdapter = RecorderAdapter(noteViewModel,this)
-        rv_record.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+        recorderAdapter = RecorderAdapter(noteViewModel, this)
+        rv_record.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
 //        recordAdapter!!.setListener(this)
         rv_record.layoutParams = listLayoutParams
         rv_record.adapter = recorderAdapter
@@ -672,21 +721,22 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         val path = root.absolutePath + "/NoteApplication/${noteID}/Audios"
         val directory = File(path)
         val files = directory.listFiles()
-        if (files != null){
+        if (files != null) {
             val nameArray = arrayListOf<Int>()
-            for (i in files.indices){
+            for (i in files.indices) {
 //                recordNumber++
                 val fileName = files[i].name
-                val tempName = fileName.substring(0, fileName.length-4)
+                val tempName = fileName.substring(0, fileName.length - 4)
                 nameArray.add(tempName.toInt())
                 Log.i("Recorder", tempName)
             }
             nameArray.sort()
             recordNumber = nameArray[nameArray.lastIndex]
 
-            for (i in 0 until nameArray.size){
+            for (i in 0 until nameArray.size) {
                 Log.i("Recorder", nameArray[i].toString())
-                val recordingUri = root.absolutePath + "/NoteApplication/${noteID}/Audios/" + "${nameArray[i]}.mp3"
+                val recordingUri =
+                    root.absolutePath + "/NoteApplication/${noteID}/Audios/" + "${nameArray[i]}.mp3"
 //                recordArrayList.add(Recording(recordingUri, fileName, false))
                 recordingList.add(Recording(recordingUri, nameArray[i].toString(), false))
             }
@@ -695,7 +745,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
     }
 
-    private fun addRecord(){
+    private fun addRecord() {
 //        recordAdapter?.addItem(Recording(fileName!!,"dummy", false))
         recordingList.add(Recording(fileName!!, "dummy", false))
         noteViewModel.recordingList.postValue(recordingList)
@@ -1173,40 +1223,62 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             || ContextCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE), RECORD_AUDIO_REQUEST_CODE)
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ), RECORD_AUDIO_REQUEST_CODE
+            )
         }
     }
 
-    private fun getPermissionToTakePhoto(){
+    private fun getPermissionToTakePhoto() {
         if (ContextCompat.checkSelfPermission(
                 requireContext(),
                 Manifest.permission.CAMERA
-        )!= PackageManager.PERMISSION_GRANTED){
-            requestPermissions(arrayOf(Manifest.permission.CAMERA),CAMERA_REQUEST_CODE)
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.CAMERA), CAMERA_REQUEST_CODE)
         }
     }
 
     // Callback with the request from calling requestPermissions(...)
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
         // Make sure it's our original READ_CONTACTS request
         if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
             if (grantResults.size == 3 &&
                 grantResults[0] == PackageManager.PERMISSION_GRANTED &&
                 grantResults[1] == PackageManager.PERMISSION_GRANTED &&
-                grantResults[2] == PackageManager.PERMISSION_GRANTED) {
+                grantResults[2] == PackageManager.PERMISSION_GRANTED
+            ) {
                 //Toast.makeText(this, "Record Audio permission granted", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(requireContext(), "You must give permissions to use this app", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    "You must give permissions to use this app",
+                    Toast.LENGTH_SHORT
+                ).show()
 //                finishAffinity(requireActivity())
             }
         }
-        if (requestCode == CAMERA_REQUEST_CODE){
+        if (requestCode == CAMERA_REQUEST_CODE) {
             if (grantResults.size == 1 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                grantResults[0] == PackageManager.PERMISSION_GRANTED
+            ) {
 
-            }else{
-                Toast.makeText(requireContext(), "You must give permissions to use this app", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    "You must give permissions to use this app",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -1232,7 +1304,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK && requestCode == CAMERA_REQUEST_CODE ){
+        if (resultCode == Activity.RESULT_OK && requestCode == CAMERA_REQUEST_CODE) {
             Log.i("result", "camera")
             val root = android.os.Environment.getExternalStorageDirectory()
             val file = File(root.absolutePath + "/NoteApplication/${noteID}/Images/")
@@ -1240,25 +1312,58 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 file.mkdirs()
             }
             imageNumber++
-            imageFileName = root.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
+            imageFileName =
+                root.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
             try {
-                val thumbnail = MediaStore.Images.Media.getBitmap(
-                    requireContext().contentResolver, imageUri
-                )
-                val imageurl = getRealPathFromURI(imageUri)
-                Log.i("result", imageurl.toString())
+                val thumbnail = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    ImageDecoder.decodeBitmap(
+                        ImageDecoder.createSource(
+                            requireContext().contentResolver,
+                            imageUri!!
+                        )
+                    )
+                } else {
+                    MediaStore.Images.Media.getBitmap(requireContext().contentResolver, imageUri)
+                }
+                val scaleWidth = thumbnail.width / 6
+                val scaleHeight = thumbnail.height / 6
+                val downsizedImageBytes: ByteArray = getDownsizedImageBytes(
+                    thumbnail,
+                    scaleWidth,
+                    scaleHeight
+                )!!
+                // 3. Upload the byte[]; Eg, if you are using Firebase
+                val bmp: Bitmap =
+                    BitmapFactory.decodeByteArray(downsizedImageBytes, 0, downsizedImageBytes.size)
+//                val imageurl = getRealPathFromURI(imageUri)
+                Log.i("result", imageFileName.toString())
                 val fileOutPutStream = FileOutputStream(imageFileName)
-    //            val bitmap = data.extras?.get("data") as Bitmap
-                thumbnail.compress(Bitmap.CompressFormat.PNG, 95, fileOutPutStream)
+                //            val bitmap = data.extras?.get("data") as Bitmap
+                bmp.compress(Bitmap.CompressFormat.PNG, 85, fileOutPutStream)
                 fileOutPutStream.flush()
                 fileOutPutStream.close()
-    //                imgView.setImageBitmap(thumbnail)
+                val scaleWidthBMP = bmp.width / 2
+                val scaleHeightBMP = bmp.height / 2
+                val downsizedImageBytesBMP: ByteArray = getDownsizedImageBytes(
+                    bmp,
+                    scaleWidthBMP,
+                    scaleHeightBMP
+                )!!
+                val bmp2: Bitmap = BitmapFactory.decodeByteArray(
+                    downsizedImageBytesBMP,
+                    0,
+                    downsizedImageBytesBMP.size
+                )
+//                bmp2.compress(Bitmap.CompressFormat.PNG, 85, null)
+                imageList.add(Image(UUID.randomUUID().toString(), imageFileName!!, bmp, bmp2, "image"))
+                noteViewModel.imageList.postValue(imageList)
+                //          imgView.setImageBitmap(thumbnail)
             } catch (e: java.lang.Exception) {
                 e.printStackTrace()
             }
 
         }
-        if (resultCode == Activity.RESULT_OK && requestCode == GALLERY_REQUEST_CODE){
+        if (resultCode == Activity.RESULT_OK && requestCode == GALLERY_REQUEST_CODE) {
 //            imageView.setImageURI(data?.data) // handle chosen image
             val root = android.os.Environment.getExternalStorageDirectory()
             val file = File(root.absolutePath + "/NoteApplication/${noteID}/Images/")
@@ -1266,13 +1371,28 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 file.mkdirs()
             }
             imageNumber++
-            imageFileName = root.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
+            imageFileName =
+                root.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
             val fileOutPutStream = FileOutputStream(imageFileName)
             val uri: Uri? = data?.data
             val bit = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
-            bit.compress(Bitmap.CompressFormat.PNG, 95, fileOutPutStream)
+            bit.compress(Bitmap.CompressFormat.PNG, 85, fileOutPutStream)
             fileOutPutStream.flush()
             fileOutPutStream.close()
+            val scaleWidth = bit.width / 2
+            val scaleHeight = bit.height / 2
+            val downsizedImageBytesBMP: ByteArray = getDownsizedImageBytes(
+                bit,
+                scaleWidth,
+                scaleHeight
+            )!!
+            val bmp2: Bitmap = BitmapFactory.decodeByteArray(
+                downsizedImageBytesBMP,
+                0,
+                downsizedImageBytesBMP.size
+            )
+            imageList.add(Image(UUID.randomUUID().toString(), imageFileName!!, bit, bmp2, "image"))
+            noteViewModel.imageList.postValue(imageList)
         }
     }
 
@@ -1283,6 +1403,25 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             .getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
         cursor.moveToFirst()
         return cursor.getString(column_index)
+    }
+
+    @Throws(IOException::class)
+    fun getDownsizedImageBytes(
+        fullBitmap: Bitmap?,
+        scaleWidth: Int,
+        scaleHeight: Int
+    ): ByteArray? {
+        val scaledBitmap = Bitmap.createScaledBitmap(
+            fullBitmap!!,
+            scaleWidth,
+            scaleHeight,
+            true
+        )
+
+        // 2. Instantiate the downsized image content as a byte[]
+        val baos = ByteArrayOutputStream()
+        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos)
+        return baos.toByteArray()
     }
 
 }
