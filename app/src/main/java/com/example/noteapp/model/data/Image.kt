@@ -7,6 +7,6 @@ data class Image(
     val id: String,
     val contentUri: String,
     val originalBitmap: Bitmap,
-    val bitmap: Bitmap,
+    val thumbnail: Bitmap,
     val name: String
 )

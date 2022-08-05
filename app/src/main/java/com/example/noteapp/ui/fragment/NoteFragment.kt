@@ -60,7 +60,22 @@ import java.io.ByteArrayOutputStream
 
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
+import android.os.Environment
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
+import androidx.core.content.FileProvider
+import androidx.core.view.drawToBitmap
+import androidx.lifecycle.lifecycleScope
+import com.example.noteapp.BuildConfig
 import com.example.noteapp.ui.dialog.*
+import android.R.attr.data
+import android.R.attr.thumb
+import android.media.ThumbnailUtils
+import android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+import androidx.annotation.RequiresApi
+import androidx.lifecycle.Lifecycle
+import kotlinx.coroutines.*
+import java.lang.Runnable
 
 
 class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderCallBack {
@@ -110,9 +125,16 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     lateinit var imageAdapter: ImageAdapter
     val imageList = arrayListOf<Image>()
 
+    private var camera_permission_granted = false
+    private var read_permission_granted = false
+    private var write_permission_granted = false
+    private var record_permission_granted = false
+    private var alarm_permission_granted = false
+    private var lastUri: Uri? = null
+
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         noteViewModel = (activity as MainActivity).noteViewModel
         if (args.id == "-1")
             noteID = UUID.randomUUID().toString()
@@ -121,8 +143,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         primaryText = et_todo.text.toString()
         requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
-//        output = Environment.getExternalStorageDirectory().absolutePath + "/recording.mp3"
-//        mediaRecorder.setOutputFile(output)
         if (args.id != "-1") {
             noteID = args.id
             noteViewModel.getNote(args.id).observe(viewLifecycleOwner, Observer { note ->
@@ -145,9 +165,52 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 }
             })
         }
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            read_permission_granted =
+                permissions[Manifest.permission.READ_EXTERNAL_STORAGE] ?: read_permission_granted
+            write_permission_granted =
+                permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] ?: write_permission_granted
+            camera_permission_granted =
+                permissions[Manifest.permission.CAMERA] ?: camera_permission_granted
+            record_permission_granted =
+                permissions[Manifest.permission.RECORD_AUDIO] ?: record_permission_granted
+            alarm_permission_granted =
+                permissions[Manifest.permission.SCHEDULE_EXACT_ALARM] ?: alarm_permission_granted
+        }
 
-        getAllRecording()
-        getAllImages()
+        val takePhoto =
+            registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
+                if (isSuccess) {
+                    Log.i("result", "success")
+                    lifecycleScope.launch {
+                        val bitmap =
+                            MediaStore.Images.Media.getBitmap(
+                                requireContext().contentResolver,
+                                lastUri
+                            )
+                        manageImage(bitmap)
+                    }
+                }
+            }
+        val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let {
+                lifecycleScope.launch {
+                    val bitmap =
+                        MediaStore.Images.Media.getBitmap(requireContext().contentResolver, it)
+                    manageImage(bitmap)
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            getAllRecording()
+            getAllImages()
+        }
+
+        updateOrRequestPermission()
+
         hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
             alarmID = it
@@ -194,6 +257,11 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
 
         btn_reminder.setOnClickListener {
+            val permissionsToRequest = mutableListOf<String>()
+            if (!alarm_permission_granted)
+                permissionsToRequest.add(Manifest.permission.SCHEDULE_EXACT_ALARM)
+            if (permissionsToRequest.isNotEmpty())
+                requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
             showDatePickerDialog()
         }
 
@@ -341,70 +409,112 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             }
 
             bottomSheetDialog.tv_add_voice.setOnClickListener {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    getPermissionToRecordAudio()
-                }
-                RecorderDialog(requireContext(), object : RecorderDialogListener {
-                    override fun onStopRecorder() {
+                val permissionsToRequest = mutableListOf<String>()
+                if (!read_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                if (!write_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                if (!record_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
+                if (permissionsToRequest.isNotEmpty())
+                    requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+
+                if (record_permission_granted) {
+                    RecorderDialog(requireContext(), object : RecorderDialogListener {
+                        override fun onStopRecorder() {
+                            try {
+                                mediaRecorder!!.stop()
+                                mediaRecorder!!.release()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                            mediaRecorder = null
+                            Toast.makeText(requireContext(), "stop recording.", Toast.LENGTH_SHORT)
+                                .show()
+                            addRecord()
+                        }
+                    }).show()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        mediaRecorder = MediaRecorder()
+                        mediaRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
+                        mediaRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+//                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+//                    mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                        val root = requireContext().getExternalFilesDir(null)
+                        val file = File(root?.absolutePath + "/NoteApplication/${noteID}/Audios/")
+                        if (!file.exists()) {
+                            file.mkdirs()
+                        }
+                        recordNumber++
+                        fileName =
+                            root?.absolutePath + "/NoteApplication/${noteID}/Audios/" + "$recordNumber.mp3"
+                        mediaRecorder!!.setOutputFile(fileName)
+                        mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+
                         try {
-                            mediaRecorder!!.stop()
-                            mediaRecorder!!.release()
-                        } catch (e: Exception) {
+                            mediaRecorder!!.prepare()
+                            mediaRecorder!!.start()
+                        } catch (e: IOException) {
                             e.printStackTrace()
                         }
-                        mediaRecorder = null
-                        Toast.makeText(requireContext(), "stop recording.", Toast.LENGTH_SHORT)
-                            .show()
-                        addRecord()
                     }
-                }).show()
-
-                mediaRecorder = MediaRecorder()
-                mediaRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
-                mediaRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-//                mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-//                mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                val root = android.os.Environment.getExternalStorageDirectory()
-                val file = File(root.absolutePath + "/NoteApplication/${noteID}/Audios/")
-                if (!file.exists()) {
-                    file.mkdirs()
-                }
-                recordNumber++
-                fileName =
-                    root.absolutePath + "/NoteApplication/${noteID}/Audios/" + "$recordNumber.mp3"
-                Log.d("filename", fileName.toString())
-                mediaRecorder!!.setOutputFile(fileName)
-                mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-
-                try {
-                    mediaRecorder!!.prepare()
-                    mediaRecorder!!.start()
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                    bottomSheetDialog.dismiss()
                 }
 
-                bottomSheetDialog.dismiss()
             }
 
             bottomSheetDialog.tv_add_photo.setOnClickListener {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    getPermissionToTakePhoto()
-                }
+                val permissionsToRequest = mutableListOf<String>()
+                if (!read_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                if (!write_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                if (!camera_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.CAMERA)
+                if (permissionsToRequest.isNotEmpty())
+                    requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+//                when {
+//                    ContextCompat.checkSelfPermission(
+//                        requireContext(),
+//                        Manifest.permission.CAMERA
+//                    ) == PackageManager.PERMISSION_GRANTED -> {
+//                        // show granted dialog
+//                    }
+//                    ActivityCompat.shouldShowRequestPermissionRationale(
+//                        requireActivity(),
+//                        Manifest.permission.CAMERA
+//                    ) -> {
+//                        requestPermissionLauncher.launch(
+//                            Manifest.permission.CAMERA
+//                        )
+//                    }
+//                    else -> requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+//                }
+
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//                    getPermissionToTakePhoto()
+//                }
                 val imageBottomSheetDialog = BottomSheetDialog(
                     requireContext(), R.style.CustomBottomSheetDialog
                 )
                 imageBottomSheetDialog.setContentView(R.layout.take_image_dialog)
 
                 imageBottomSheetDialog.img_camera.setOnClickListener {
-                    values = ContentValues()
-                    values!!.put(MediaStore.Images.Media.TITLE, "New Picture")
-                    values!!.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera")
-                    imageUri = requireContext().contentResolver.insert(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
-                    )
-                    val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                    intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri)
-                    startActivityForResult(intent, CAMERA_REQUEST_CODE)
+                    lifecycleScope.launchWhenStarted {
+                        getTmpFileUri().let {
+                            lastUri = it
+                            takePhoto.launch(it)
+                        }
+                    }
+//                    values = ContentValues()
+//                    values!!.put(MediaStore.Images.Media.TITLE, "New Picture")
+//                    values!!.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera")
+//                    imageUri = requireContext().contentResolver.insert(
+//                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
+//                    )
+//                    val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//                    intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri)
+//                    startActivityForResult(intent, CAMERA_REQUEST_CODE)
 
 //                    val fileOutPutStream = FileOutputStream(imageFileName)
 //                    val bitmap = data.extras?.get("data") as Bitmap
@@ -419,10 +529,11 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                     imageBottomSheetDialog.dismiss()
                 }
                 imageBottomSheetDialog.img_gallery.setOnClickListener {
-                    val intent = Intent(Intent.ACTION_PICK)
-                    intent.type = "image/*"
-                    startActivityForResult(intent, GALLERY_REQUEST_CODE)
+                    pickImage.launch("image/*")
                     imageBottomSheetDialog.dismiss()
+//                    val intent = Intent(Intent.ACTION_PICK)
+//                    intent.type = "image/*"
+//                    startActivityForResult(intent, GALLERY_REQUEST_CODE)
                 }
 
                 imageBottomSheetDialog.show()
@@ -430,6 +541,8 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             }
             bottomSheetDialog.show()
         }
+
+
 
         tv_markdown.setOnClickListener {
             view.let { activity?.hideKeyboard(it) }
@@ -482,19 +595,99 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
 //            playRecord(it.uri)
         }
         noteViewModel.recordingList.observe(viewLifecycleOwner, Observer { records ->
-            Log.i("Recorder", "call observer")
+            Log.i("Recorder", "submit record to list")
             records?.let {
                 recorderAdapter.differ.submitList(records.toMutableList())
             }
         })
         noteViewModel.imageList.observe(viewLifecycleOwner, Observer { images ->
             images?.let {
-                imageAdapter.submitList(images)
+                imageAdapter.submitList(images.toMutableList())
+                Log.i("result", "submit images to list")
             }
         })
     }
 
-    private fun getAllImages() {
+    private fun updateOrRequestPermission() {
+        read_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+        write_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+        camera_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+        record_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        alarm_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.SCHEDULE_EXACT_ALARM
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private suspend fun manageImage(bitmap: Bitmap) {
+        withContext(Dispatchers.IO) {
+            val root = requireContext().getExternalFilesDir(null)
+            val file = File(root?.absolutePath + "/NoteApplication/${noteID}/Images/")
+            if (!file.exists())
+                file.mkdir()
+            imageNumber++
+            val imagePath =
+                root?.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
+            try {
+                val thumbnail = getThumbnail(bitmap)
+                imageList.add(
+                    Image(
+                        UUID.randomUUID().toString(),
+                        imagePath,
+                        bitmap,
+                        thumbnail,
+                        "img"
+                    )
+                )
+                noteViewModel.imageList.postValue(imageList)
+                val writeToExternalStorage = FileOutputStream(imagePath)
+                bitmap.compress(Bitmap.CompressFormat.PNG, 85, writeToExternalStorage)
+                writeToExternalStorage.flush()
+                writeToExternalStorage.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private suspend fun getThumbnail(bitmap: Bitmap): Bitmap {
+        var thumbnail: Bitmap? = null
+        val wait = CoroutineScope(Dispatchers.IO).async {
+            thumbnail = ThumbnailUtils.extractThumbnail(bitmap, 128, 128)
+            return@async thumbnail
+        }
+        wait.await()
+        return thumbnail!!
+    }
+
+    private fun getTmpFileUri(): Uri {
+        val tmpFile =
+            File.createTempFile("tmp_image_file", ".png", requireContext().cacheDir).apply {
+                createNewFile()
+                deleteOnExit()
+            }
+
+        return FileProvider.getUriForFile(
+            requireContext().applicationContext,
+            "${BuildConfig.APPLICATION_ID}.provider",
+            tmpFile
+        )
+    }
+
+
+    private suspend fun getAllImages() {
         imageAdapter = ImageAdapter { image, pos ->
             if (pos == -1) {
                 ImageDialog(
@@ -504,7 +697,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             } else {
                 val file = File(image.contentUri)
                 file.delete()
-                Log.i("result",image.contentUri.toString())
+                Log.i("result", image.contentUri)
                 noteViewModel.imageList.postValue(
                     noteViewModel.imageList.value?.toMutableList()?.apply {
                         removeAt(pos)
@@ -519,62 +712,67 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         )
         rv_image.adapter = imageAdapter
 
-        val root = android.os.Environment.getExternalStorageDirectory()
-        val path = root.absolutePath + "/NoteApplication/${noteID}/Images"
-        val directory = File(path)
-        val files = directory.listFiles()
-        if (files != null) {
-            val nameArray = arrayListOf<Int>()
-            for (i in files.indices) {
-                val fileName = files[i].name
-                val tempName = fileName.substring(0, fileName.length - 4)
-                nameArray.add(tempName.toInt())
-                Log.i("Image", tempName)
-            }
-            nameArray.sort()
-            imageNumber = nameArray[nameArray.lastIndex]
+        withContext(Dispatchers.IO) {
+            val root = requireContext().getExternalFilesDir(null)
+            val path = root?.absolutePath + "/NoteApplication/${noteID}/Images"
+            val directory = File(path)
+            val files = directory.listFiles()
+            if (files != null) {
+                val nameArray = arrayListOf<Int>()
+                for (i in files.indices) {
+                    val fileName = files[i].name
+                    val tempName = fileName.substring(0, fileName.length - 4)
+                    nameArray.add(tempName.toInt())
+                }
+                nameArray.sort()
+                imageNumber = nameArray[nameArray.lastIndex]
 
-            for (i in 0 until nameArray.size) {
-                Log.i("Image", nameArray[i].toString())
-                val imageUri =
-                    root.absolutePath + "/NoteApplication/${noteID}/Images/" + "${nameArray[i]}.png"
-                val file = File(imageUri)
-                val uri = Uri.fromFile(file)
-                val bit = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
-                val scaleWidth = bit.width / 2
-                val scaleHeight = bit.height / 2
-                val downsizedImageBytesBMP: ByteArray = getDownsizedImageBytes(
-                    bit,
-                    scaleWidth,
-                    scaleHeight
-                )!!
-                val bmp2: Bitmap = BitmapFactory.decodeByteArray(
-                    downsizedImageBytesBMP,
-                    0,
-                    downsizedImageBytesBMP.size
-                )
-                imageList.add(Image(UUID.randomUUID().toString(), imageUri, bit, bmp2, "name"))
+                for (i in 0 until nameArray.size) {
+                    val imageUri =
+                        root?.absolutePath + "/NoteApplication/${noteID}/Images/" + "${nameArray[i]}.png"
+                    val file = File(imageUri)
+                    val uri = Uri.fromFile(file)
+                    val bit =
+                        MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
+                    lifecycleScope.launch {
+                        val wait = CoroutineScope(Dispatchers.IO).async {
+                            val thumbnail = getThumbnail(bit)
+                            imageList.add(
+                                Image(
+                                    UUID.randomUUID().toString(),
+                                    imageUri,
+                                    bit,
+                                    thumbnail,
+                                    "img"
+                                )
+                            )
+                            return@async
+                        }
+                        wait.await()
+                        noteViewModel.imageList.postValue(imageList)
+                    }
+                }
             }
-            noteViewModel.imageList.postValue(imageList)
-//            recorderAdapter.differ.submitList(noteViewModel.recordingList.value)
         }
     }
 
 
     override fun removeRecord(record: Recording, position: Int) {
-        Log.i("Recorder", "delete: $position")
-        val file = File(record.uri)
-        file.delete()
-        if (position == last_index) {
-            stopPlaying()
-            noteViewModel.recordPosition = 0
-        }
-        noteViewModel.recordingList.postValue(
-            noteViewModel.recordingList.value!!.toMutableList().apply {
-//                remove(record)
-                removeAt(position)
+        lifecycleScope.launch(Dispatchers.IO) {
+            Log.i("Recorder", "delete: $position")
+            Log.i("result", record.uri)
+            val file = File(record.uri)
+            file.delete()
+            if (position == last_index) {
+                stopPlaying()
+                noteViewModel.recordPosition = 0
             }
-        )
+            noteViewModel.recordingList.postValue(
+                noteViewModel.recordingList.value!!.toMutableList().apply {
+                    removeAt(position)
+                }
+            )
+        }
     }
 
     override fun getRecordItems(
@@ -649,8 +847,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         } catch (e: IOException) {
             Log.e("LOG_TAG", "prepare() failed")
         }
-        //showing the pause button
-//        seekBar!!.max = mediaPlayer!!.duration
         isPlaying = true
         if (noteViewModel.recordPosition != 0) {
             Log.i("Recorder", "seekTo")
@@ -702,56 +898,44 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         })
     }
 
-    private fun getAllRecording() {
-//        val recordArrayList = ArrayList<Recording>()
+    private suspend fun getAllRecording() {
         val systemHeight = Resources.getSystem().displayMetrics.heightPixels
-        Log.i("Recording", "height integer $systemHeight")
         val listLayoutParams: LinearLayout.LayoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, systemHeight / 1.5.toInt(),
         )
-        Log.i("Recording", listLayoutParams.height.toString())
         recorderAdapter = RecorderAdapter(noteViewModel, this)
         rv_record.layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
-//        recordAdapter!!.setListener(this)
         rv_record.layoutParams = listLayoutParams
         rv_record.adapter = recorderAdapter
 
-        val root = android.os.Environment.getExternalStorageDirectory()
-        val path = root.absolutePath + "/NoteApplication/${noteID}/Audios"
-        val directory = File(path)
-        val files = directory.listFiles()
-        if (files != null) {
-            val nameArray = arrayListOf<Int>()
-            for (i in files.indices) {
-//                recordNumber++
-                val fileName = files[i].name
-                val tempName = fileName.substring(0, fileName.length - 4)
-                nameArray.add(tempName.toInt())
-                Log.i("Recorder", tempName)
+        withContext(Dispatchers.IO) {
+            val root = requireContext().getExternalFilesDir(null)
+            val path = root?.absolutePath + "/NoteApplication/${noteID}/Audios"
+            val directory = File(path)
+            val files = directory.listFiles()
+            if (files != null) {
+                val nameArray = arrayListOf<Int>()
+                for (i in files.indices) {
+                    val fileName = files[i].name
+                    val tempName = fileName.substring(0, fileName.length - 4)
+                    nameArray.add(tempName.toInt())
+                }
+                nameArray.sort()
+                recordNumber = nameArray[nameArray.lastIndex]
+                for (i in 0 until nameArray.size) {
+                    val recordingUri =
+                        root?.absolutePath + "/NoteApplication/${noteID}/Audios/" + "${nameArray[i]}.mp3"
+                    recordingList.add(Recording(recordingUri, nameArray[i].toString(), false))
+                }
+                noteViewModel.recordingList.postValue(recordingList)
             }
-            nameArray.sort()
-            recordNumber = nameArray[nameArray.lastIndex]
-
-            for (i in 0 until nameArray.size) {
-                Log.i("Recorder", nameArray[i].toString())
-                val recordingUri =
-                    root.absolutePath + "/NoteApplication/${noteID}/Audios/" + "${nameArray[i]}.mp3"
-//                recordArrayList.add(Recording(recordingUri, fileName, false))
-                recordingList.add(Recording(recordingUri, nameArray[i].toString(), false))
-            }
-            noteViewModel.recordingList.postValue(recordingList)
-//            recorderAdapter.differ.submitList(noteViewModel.recordingList.value)
         }
     }
 
     private fun addRecord() {
-//        recordAdapter?.addItem(Recording(fileName!!,"dummy", false))
         recordingList.add(Recording(fileName!!, "dummy", false))
         noteViewModel.recordingList.postValue(recordingList)
-//        noteViewModel.recordingList.value?.toMutableList()?.add(Recording(fileName!!, "dummy", false))
-//        recorderAdapter.differ.submitList(noteViewModel.recordingList.value)
-//        recorderAdapter.notifyItemInserted(noteViewModel.recordingList.value!!.size)
     }
 
     private fun createNotificationChannel() {
@@ -770,24 +954,27 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     private fun setAlarm() {
         if (noteID == "-1")
             return
-        alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(requireContext(), AlarmReceiver::class.java)
-        intent.putExtra("id", noteID)
-        intent.putExtra("content", et_todo.text.toString())
-        intent.putExtra("Destination", "1")
-        Log.i("viewmodel", "give noteId is$noteID")
-        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, 0)
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+            alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(requireContext(), AlarmReceiver::class.java)
+            intent.putExtra("id", noteID)
+            intent.putExtra("content", et_todo.text.toString())
+            intent.putExtra("Destination", "1")
+            intent.putExtra("alarmId", alarmID)
+            Log.i("viewmodel", "give noteId is$noteID")
+            pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
 //        alarmManager.setRepeating(
 //            AlarmManager.RTC_WAKEUP, calendar.timeInMillis,
 //            AlarmManager.INTERVAL_DAY, pendingIntent
 //        )
+//        }
+
     }
 
     private fun cancelAlarm() {
         alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(requireContext(), AlarmReceiver::class.java)
-        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, 0)
+        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         alarmManager.cancel(pendingIntent)
         Toast.makeText(requireContext(), "آلارم حذف شد.", Toast.LENGTH_SHORT).show()
     }
@@ -963,6 +1150,22 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         reminderAdapter.differ.submitList(date)
         bottomSheetDialog.tv_year_reminder.text = date[0].Year
         bottomSheetDialog.make_alarm.setOnClickListener {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                when {
+                    alarmManager.canScheduleExactAlarms() -> {
+
+                    }
+                    else -> {
+                        Intent().apply {
+                            action = ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                        }.also {
+                            startActivity(it)
+                        }
+                    }
+                }
+            }
 
             val alarmDate = reminderAdapter.getSelectedDate()
             val alarmHour = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -1183,6 +1386,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         if (mediaPlayer != null)
             stopPlaying()
         noteViewModel.recordingList.postValue(null)
+        noteViewModel.imageList.postValue(null)
         noteViewModel.recordPosition = 0
     }
 
@@ -1208,32 +1412,33 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         noteViewModel.alarmId.value = -1
         noteViewModel.setSelectedSortOption(2)
         noteViewModel.recordingList.postValue(null)
+        noteViewModel.imageList.postValue(null)
         noteViewModel.recordPosition = 0
     }
 
-    private fun getPermissionToRecordAudio() {
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-            || ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-            || ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(
-                arrayOf(
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.RECORD_AUDIO,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ), RECORD_AUDIO_REQUEST_CODE
-            )
-        }
-    }
+//    private fun getPermissionToRecordAudio() {
+//        if (ContextCompat.checkSelfPermission(
+//                requireContext(),
+//                Manifest.permission.RECORD_AUDIO
+//            ) != PackageManager.PERMISSION_GRANTED
+//            || ContextCompat.checkSelfPermission(
+//                requireContext(),
+//                Manifest.permission.READ_EXTERNAL_STORAGE
+//            ) != PackageManager.PERMISSION_GRANTED
+//            || ContextCompat.checkSelfPermission(
+//                requireContext(),
+//                Manifest.permission.WRITE_EXTERNAL_STORAGE
+//            ) != PackageManager.PERMISSION_GRANTED
+//        ) {
+//            requestPermissions(
+//                arrayOf(
+//                    Manifest.permission.READ_EXTERNAL_STORAGE,
+//                    Manifest.permission.RECORD_AUDIO,
+//                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+//                ), RECORD_AUDIO_REQUEST_CODE
+//            )
+//        }
+//    }
 
     private fun getPermissionToTakePhoto() {
         if (ContextCompat.checkSelfPermission(
@@ -1246,42 +1451,42 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     }
 
     // Callback with the request from calling requestPermissions(...)
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        // Make sure it's our original READ_CONTACTS request
-        if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
-            if (grantResults.size == 3 &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED &&
-                grantResults[1] == PackageManager.PERMISSION_GRANTED &&
-                grantResults[2] == PackageManager.PERMISSION_GRANTED
-            ) {
-                //Toast.makeText(this, "Record Audio permission granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    "You must give permissions to use this app",
-                    Toast.LENGTH_SHORT
-                ).show()
-//                finishAffinity(requireActivity())
-            }
-        }
-        if (requestCode == CAMERA_REQUEST_CODE) {
-            if (grantResults.size == 1 &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED
-            ) {
-
-            } else {
-                Toast.makeText(
-                    requireContext(),
-                    "You must give permissions to use this app",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
+//    override fun onRequestPermissionsResult(
+//        requestCode: Int,
+//        permissions: Array<String>,
+//        grantResults: IntArray
+//    ) {
+//        // Make sure it's our original READ_CONTACTS request
+//        if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
+//            if (grantResults.size == 3 &&
+//                grantResults[0] == PackageManager.PERMISSION_GRANTED &&
+//                grantResults[1] == PackageManager.PERMISSION_GRANTED &&
+//                grantResults[2] == PackageManager.PERMISSION_GRANTED
+//            ) {
+//                //Toast.makeText(this, "Record Audio permission granted", Toast.LENGTH_SHORT).show();
+//            } else {
+//                Toast.makeText(
+//                    requireContext(),
+//                    "You must give permissions to use this app",
+//                    Toast.LENGTH_SHORT
+//                ).show()
+////                finishAffinity(requireActivity())
+//            }
+//        }
+//        if (requestCode == CAMERA_REQUEST_CODE) {
+//            if (grantResults.size == 1 &&
+//                grantResults[0] == PackageManager.PERMISSION_GRANTED
+//            ) {
+//
+//            } else {
+//                Toast.makeText(
+//                    requireContext(),
+//                    "You must give permissions to use this app",
+//                    Toast.LENGTH_SHORT
+//                ).show()
+//            }
+//        }
+//    }
 
     private fun stopPlaying() {
         try {
@@ -1300,100 +1505,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         Log.i("Recording", " density: ${context.resources.displayMetrics.density}")
         Log.i("Recording", " pixel: ${px / context.resources.displayMetrics.density}")
         return px / context.resources.displayMetrics.density
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK && requestCode == CAMERA_REQUEST_CODE) {
-            Log.i("result", "camera")
-            val root = android.os.Environment.getExternalStorageDirectory()
-            val file = File(root.absolutePath + "/NoteApplication/${noteID}/Images/")
-            if (!file.exists()) {
-                file.mkdirs()
-            }
-            imageNumber++
-            imageFileName =
-                root.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
-            try {
-                val thumbnail = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    ImageDecoder.decodeBitmap(
-                        ImageDecoder.createSource(
-                            requireContext().contentResolver,
-                            imageUri!!
-                        )
-                    )
-                } else {
-                    MediaStore.Images.Media.getBitmap(requireContext().contentResolver, imageUri)
-                }
-                val scaleWidth = thumbnail.width / 6
-                val scaleHeight = thumbnail.height / 6
-                val downsizedImageBytes: ByteArray = getDownsizedImageBytes(
-                    thumbnail,
-                    scaleWidth,
-                    scaleHeight
-                )!!
-                // 3. Upload the byte[]; Eg, if you are using Firebase
-                val bmp: Bitmap =
-                    BitmapFactory.decodeByteArray(downsizedImageBytes, 0, downsizedImageBytes.size)
-//                val imageurl = getRealPathFromURI(imageUri)
-                Log.i("result", imageFileName.toString())
-                val fileOutPutStream = FileOutputStream(imageFileName)
-                //            val bitmap = data.extras?.get("data") as Bitmap
-                bmp.compress(Bitmap.CompressFormat.PNG, 85, fileOutPutStream)
-                fileOutPutStream.flush()
-                fileOutPutStream.close()
-                val scaleWidthBMP = bmp.width / 2
-                val scaleHeightBMP = bmp.height / 2
-                val downsizedImageBytesBMP: ByteArray = getDownsizedImageBytes(
-                    bmp,
-                    scaleWidthBMP,
-                    scaleHeightBMP
-                )!!
-                val bmp2: Bitmap = BitmapFactory.decodeByteArray(
-                    downsizedImageBytesBMP,
-                    0,
-                    downsizedImageBytesBMP.size
-                )
-//                bmp2.compress(Bitmap.CompressFormat.PNG, 85, null)
-                imageList.add(Image(UUID.randomUUID().toString(), imageFileName!!, bmp, bmp2, "image"))
-                noteViewModel.imageList.postValue(imageList)
-                //          imgView.setImageBitmap(thumbnail)
-            } catch (e: java.lang.Exception) {
-                e.printStackTrace()
-            }
-
-        }
-        if (resultCode == Activity.RESULT_OK && requestCode == GALLERY_REQUEST_CODE) {
-//            imageView.setImageURI(data?.data) // handle chosen image
-            val root = android.os.Environment.getExternalStorageDirectory()
-            val file = File(root.absolutePath + "/NoteApplication/${noteID}/Images/")
-            if (!file.exists()) {
-                file.mkdirs()
-            }
-            imageNumber++
-            imageFileName =
-                root.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
-            val fileOutPutStream = FileOutputStream(imageFileName)
-            val uri: Uri? = data?.data
-            val bit = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
-            bit.compress(Bitmap.CompressFormat.PNG, 85, fileOutPutStream)
-            fileOutPutStream.flush()
-            fileOutPutStream.close()
-            val scaleWidth = bit.width / 2
-            val scaleHeight = bit.height / 2
-            val downsizedImageBytesBMP: ByteArray = getDownsizedImageBytes(
-                bit,
-                scaleWidth,
-                scaleHeight
-            )!!
-            val bmp2: Bitmap = BitmapFactory.decodeByteArray(
-                downsizedImageBytesBMP,
-                0,
-                downsizedImageBytesBMP.size
-            )
-            imageList.add(Image(UUID.randomUUID().toString(), imageFileName!!, bit, bmp2, "image"))
-            noteViewModel.imageList.postValue(imageList)
-        }
     }
 
     fun getRealPathFromURI(contentUri: Uri?): String? {

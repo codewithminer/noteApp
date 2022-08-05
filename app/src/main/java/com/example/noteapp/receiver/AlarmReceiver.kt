@@ -1,10 +1,15 @@
 package com.example.noteapp.receiver
 
+import android.app.AlarmManager
+import android.app.AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.NavDeepLinkBuilder
@@ -21,13 +26,18 @@ class AlarmReceiver: BroadcastReceiver() {
 //        val pendingIntent = PendingIntent.getActivity(context, 0, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 //        val pendingIntent = PendingIntent.getActivity(context, 0, i, 0)
         val bundle = Bundle()
-        bundle.putInt("id",intent.getIntExtra("id",-1))
-
+        bundle.putString("id",intent.getStringExtra("id"))
+//        val pendingIntent = NavDeepLinkBuilder(context!!)
+//            .setGraph(R.navigation.nav_graph)
+//            .setDestination(if (intent.getStringExtra("Destination") == "1") R.id.noteFragment else R.id.checkListFragment)
+//            .setArguments(bundle)
+//            .createPendingIntent()
         val pendingIntent = NavDeepLinkBuilder(context!!)
             .setGraph(R.navigation.nav_graph)
             .setDestination(if (intent.getStringExtra("Destination") == "1") R.id.noteFragment else R.id.checkListFragment)
             .setArguments(bundle)
-            .createPendingIntent()
+            .createTaskStackBuilder()
+            .getPendingIntent(intent.getIntExtra("alarmId", 1), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, "notify")
             .setSmallIcon(R.drawable.ic_note)

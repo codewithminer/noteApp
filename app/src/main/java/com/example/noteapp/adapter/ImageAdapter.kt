@@ -38,7 +38,7 @@ class ImageAdapter(
         val photo = currentList[position]
         holder.itemView.apply {
 //            iv_photo.setImageURI(photo.contentUri)
-            iv_photo.setImageBitmap(photo.bitmap)
+            iv_photo.setImageBitmap(photo.thumbnail)
 
             iv_photo.setOnLongClickListener {
                 onPhotoClick(photo,holder.adapterPosition)
@@ -49,5 +49,10 @@ class ImageAdapter(
                 onPhotoClick(photo,-1)
             }
         }
+    }
+
+    // !! get List even if old == new
+    override fun submitList(list: MutableList<Image>?) {
+        super.submitList(list?.let { ArrayList(it) })
     }
 }

@@ -35,4 +35,11 @@
     <string name="LockBottomSheet">قفل کردن یادداشت</string>
     <string name="removeLock">برای حذف قفل رمز را وارد کنید</string>
     <string name="removeLockedNote">برای حذف یادداشت رمز را وارد کنید</string>
+    
+    
+    <string name="camera_permission_required">آیا مجوز استفاده از دوربین برای این برنامه را میدهید؟</string>
+    <string name="camera_permission_granted">مجوز ارسال شد. میتوانید از دوربین استفاده کنید.</string>
+
+
+    
 </resources>

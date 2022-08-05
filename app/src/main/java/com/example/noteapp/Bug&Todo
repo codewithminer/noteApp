@@ -17,12 +17,15 @@
 !! Fix Permissions for different sdks.
 !! Remove some checkboxes and don't save that, back to checkbox note and click back, you see CHANGE_DIALOG
 !! Fix Storage problem for sdk 29 & above and below
-
+!! Go to mark activity and back, you see a lot of images
+!! Use same NoteFragment layout on CheckBoxFragment layout for prevent removing issues
+!! remove a photo, take another, when you back you see removed image again.
 ====================================================================================================
                                         **## TASK ##**
 /*
     ? Enhance image quality (find better scale & nice quality for save and show)
     ? Run I/O works on Coroutine
+    ? Remove voice & image folder when removing note
     ? Change item-view on main-fragment -> (don't show mark signs , show bold dot instead # signs
     ?                                        for checkbox items)
     ? Create custom text-style for sharing checkboxes ex-> ([x] item1 , [] item2)
@@ -34,6 +37,10 @@
     ? Use icon for Application
     ? blue background is similar to blue foreground
     ?? Implement Voice section and Image section to CheckBox
+    ? Remove move-icon on checkbox-fragment
+    ? Lighten checked note colors
+    ? Clean codes
+    ? Use proguard or something like that
 */
 
 
