@@ -14,23 +14,23 @@
 - When remove playing record seekBard lost position (+)
 - Go to mark activity and back, you see a lot of record (+)
 ----------------------------------------------
-!! Fix Permissions for different sdks.
++  Fix Permissions for different sdks.
 !! Remove some checkboxes and don't save that, back to checkbox note and click back, you see CHANGE_DIALOG
-!! Fix Storage problem for sdk 29 & above and below
-!! Go to mark activity and back, you see a lot of images
++ Fix Storage problem for sdk 29 & above and below
++ Go to mark activity and back, you see a lot of images
 !! Use same NoteFragment layout on CheckBoxFragment layout for prevent removing issues
-!! remove a photo, take another, when you back you see removed image again.
++ remove a photo, take another, when you back you see removed image again.
 ====================================================================================================
                                         **## TASK ##**
 /*
-    ? Enhance image quality (find better scale & nice quality for save and show)
-    ? Run I/O works on Coroutine
-    ? Remove voice & image folder when removing note
+    + Enhance image quality (find better scale & nice quality for save and show)
+    + Run I/O works on Coroutine
+    + Remove voice & image folder when removing note
     ? Change item-view on main-fragment -> (don't show mark signs , show bold dot instead # signs
     ?                                        for checkbox items)
     ? Create custom text-style for sharing checkboxes ex-> ([x] item1 , [] item2)
     ? Create nice Lock-Screen dialog design
-    ? use corner for image recycler background
+    * use corner for image recycler background
     ? Try better style for records
     ? Try better style for sort-dialog
     ? Use same icon theme

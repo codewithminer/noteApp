@@ -16,6 +16,7 @@ import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.utils.*
 import kotlinx.android.synthetic.main.home_items.view.*
 import kotlinx.android.synthetic.main.locked_note_layout.view.*
+import java.io.File
 
 class MainAdapter(
     val context: Context,
@@ -50,8 +51,11 @@ class MainAdapter(
                     DeleteDialog(
                         context, object : DeleteDialogListener {
                             override fun onPositiveClick() {
+                                val root = context.getExternalFilesDir(null)?.absolutePath + "/NoteApplication/"
                                 for (i in selectedItemPosition) {
                                     noteViewModel.deleteNote(differ.currentList[i].id)
+                                    val file = File(root + "${differ.currentList[i].id}/")
+                                    file.deleteRecursively()
                                     Log.i("adapter", "del")
                                 }
                                 mode?.finish()

@@ -34,7 +34,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.aminography.primecalendar.persian.PersianCalendar
 import com.example.noteapp.ui.MainActivity
 import com.example.noteapp.R
-import com.example.noteapp.adapter.RecordAdapter
 import com.example.noteapp.adapter.RecorderAdapter
 import com.example.noteapp.adapter.ReminderAdapter
 import com.example.noteapp.receiver.AlarmReceiver
@@ -58,11 +57,7 @@ import com.example.noteapp.adapter.ImageAdapter
 import com.example.noteapp.model.data.*
 import java.io.ByteArrayOutputStream
 
-import android.graphics.BitmapFactory
-import android.graphics.ImageDecoder
-import android.os.Environment
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.drawToBitmap
 import androidx.lifecycle.lifecycleScope
@@ -99,9 +94,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     private var mediaRecorder: MediaRecorder? = null
     private var state: Boolean = false
     private var fileName: String? = null
-
-    private var recordingStopped: Boolean = false
-    private var recordAdapter: RecordAdapter? = null
 
     private val RECORD_AUDIO_REQUEST_CODE = 101
     private val CAMERA_REQUEST_CODE = 102
@@ -550,6 +542,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             COLOR_INDEX = colorIndex
             IS_LOCK = isLock
             recordingList.clear()
+            imageList.clear()
             if (isPlaying)
                 stopPlaying()
             findNavController().navigate(NoteFragmentDirections.actionNoteFragmentToShowContentFragment())
@@ -636,7 +629,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             val root = requireContext().getExternalFilesDir(null)
             val file = File(root?.absolutePath + "/NoteApplication/${noteID}/Images/")
             if (!file.exists())
-                file.mkdir()
+                file.mkdirs()
             imageNumber++
             val imagePath =
                 root?.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
@@ -698,11 +691,13 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 val file = File(image.contentUri)
                 file.delete()
                 Log.i("result", image.contentUri)
-                noteViewModel.imageList.postValue(
-                    noteViewModel.imageList.value?.toMutableList()?.apply {
-                        removeAt(pos)
-                    }
-                )
+                imageList.remove(image)
+                noteViewModel.imageList.postValue(imageList)
+//                noteViewModel.imageList.postValue(
+//                    noteViewModel.imageList.value?.toMutableList()?.apply {
+//                        removeAt(pos)
+//                    }
+//                )
             }
 
         }
@@ -724,32 +719,34 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                     val tempName = fileName.substring(0, fileName.length - 4)
                     nameArray.add(tempName.toInt())
                 }
-                nameArray.sort()
-                imageNumber = nameArray[nameArray.lastIndex]
+                if (nameArray.isNotEmpty()){
+                    nameArray.sort()
+                    imageNumber = nameArray[nameArray.lastIndex]
 
-                for (i in 0 until nameArray.size) {
-                    val imageUri =
-                        root?.absolutePath + "/NoteApplication/${noteID}/Images/" + "${nameArray[i]}.png"
-                    val file = File(imageUri)
-                    val uri = Uri.fromFile(file)
-                    val bit =
-                        MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
-                    lifecycleScope.launch {
-                        val wait = CoroutineScope(Dispatchers.IO).async {
-                            val thumbnail = getThumbnail(bit)
-                            imageList.add(
-                                Image(
-                                    UUID.randomUUID().toString(),
-                                    imageUri,
-                                    bit,
-                                    thumbnail,
-                                    "img"
+                    for (i in 0 until nameArray.size) {
+                        val imageUri =
+                            root?.absolutePath + "/NoteApplication/${noteID}/Images/" + "${nameArray[i]}.png"
+                        val file = File(imageUri)
+                        val uri = Uri.fromFile(file)
+                        val bit =
+                            MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
+                        lifecycleScope.launch {
+                            val wait = CoroutineScope(Dispatchers.IO).async {
+                                val thumbnail = getThumbnail(bit)
+                                imageList.add(
+                                    Image(
+                                        UUID.randomUUID().toString(),
+                                        imageUri,
+                                        bit,
+                                        thumbnail,
+                                        "img"
+                                    )
                                 )
-                            )
-                            return@async
+                                return@async
+                            }
+                            wait.await()
+                            noteViewModel.imageList.postValue(imageList)
                         }
-                        wait.await()
-                        noteViewModel.imageList.postValue(imageList)
                     }
                 }
             }
@@ -898,7 +895,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         })
     }
 
-    private suspend fun getAllRecording() {
+    private suspend fun getAllRecording(){
         val systemHeight = Resources.getSystem().displayMetrics.heightPixels
         val listLayoutParams: LinearLayout.LayoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, systemHeight / 1.5.toInt(),
@@ -933,7 +930,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
     }
 
-    private fun addRecord() {
+    private fun addRecord(){
         recordingList.add(Recording(fileName!!, "dummy", false))
         noteViewModel.recordingList.postValue(recordingList)
     }
@@ -968,7 +965,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
 //            AlarmManager.INTERVAL_DAY, pendingIntent
 //        )
 //        }
-
     }
 
     private fun cancelAlarm() {
