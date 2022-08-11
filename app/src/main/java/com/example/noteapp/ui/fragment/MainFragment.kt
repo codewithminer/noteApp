@@ -20,6 +20,7 @@ import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.ui.dialog.FilterDialog
 import com.example.noteapp.ui.dialog.FilterDialogListener
 import com.example.noteapp.utils.hideKeyboard
+import com.example.noteapp.utils.markDown
 import kotlinx.android.synthetic.main.fragment_home.*
 
 class MainFragment : Fragment(R.layout.fragment_home) {

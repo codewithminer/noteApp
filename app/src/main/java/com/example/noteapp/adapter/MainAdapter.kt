@@ -2,8 +2,12 @@ package com.example.noteapp.adapter
 
 import android.content.Context
 import android.graphics.Color
+import android.os.Build
+import android.text.Html
 import android.util.Log
 import android.view.*
+import androidx.annotation.RequiresApi
+import androidx.core.text.HtmlCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.AsyncListDiffer
@@ -145,6 +149,7 @@ class MainAdapter(
 
     private var onItemClickListener: ((Note) -> Unit)? = null
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
 //        holder.setIsRecyclable(false)
 
@@ -179,7 +184,12 @@ class MainAdapter(
                 cb_delete.visibility = View.GONE
                 if (isActionModeEnable && selectedItemPosition.contains(position))
                     holder.itemView.cb_delete.visibility = View.VISIBLE
-                tv_content_main.text = note.content
+                tv_content_main.text = HtmlCompat.fromHtml(markDown(note.content, note.color_index, false), HtmlCompat.FROM_HTML_MODE_COMPACT)
+//                tv_content_main.loadDataWithBaseURL(
+//                    null,
+//                    markDown(if (note.content.length >= 20 ) note.content.substring(0,40) else note.content.substring(0,note.content.length), note.color_index),
+//                    "text/html","utf-8", null)
+                Log.i("res", markDown(note.content, note.color_index, false))
                 tv_date_main.text = "" +
                         "${setPersianNumber(note.year.toString())}/" +
                         "${setPersianNumber((note.month + 1).toString())}/" +

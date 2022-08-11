@@ -1,36 +1,50 @@
 package com.example.noteapp.ui.fragment
 
+import android.Manifest
 import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.content.res.Resources
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.media.MediaPlayer
+import android.media.MediaRecorder
+import android.media.ThumbnailUtils
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
+import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.airbnb.lottie.BuildConfig
 import com.aminography.primecalendar.persian.PersianCalendar
 import com.example.noteapp.ui.MainActivity
 import com.example.noteapp.R
 import com.example.noteapp.adapter.CheckListAdapter
+import com.example.noteapp.adapter.ImageAdapter
+import com.example.noteapp.adapter.RecorderAdapter
 import com.example.noteapp.adapter.ReminderAdapter
-import com.example.noteapp.model.data.Alarm
-import com.example.noteapp.model.data.CheckBoxContent
-import com.example.noteapp.model.data.DateModel
-import com.example.noteapp.model.data.Note
+import com.example.noteapp.model.data.*
 import com.example.noteapp.receiver.AlarmReceiver
-import com.example.noteapp.ui.dialog.LockDialog
-import com.example.noteapp.ui.dialog.LockDialogListener
+import com.example.noteapp.ui.dialog.*
 import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.utils.*
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -48,11 +62,18 @@ import kotlinx.android.synthetic.main.fragment_note.btn_delete
 import kotlinx.android.synthetic.main.fragment_note.btn_reminder
 import kotlinx.android.synthetic.main.fragment_note.navigation_todo
 import kotlinx.android.synthetic.main.fragment_note.todo_toolbar
+import kotlinx.android.synthetic.main.item_recording.view.*
 import kotlinx.android.synthetic.main.reminder.*
+import kotlinx.android.synthetic.main.take_image_dialog.*
 import kotlinx.android.synthetic.main.toolbar.*
+import kotlinx.coroutines.*
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.lang.Runnable
 import java.util.*
 
-class CheckListFragment: Fragment(R.layout.fragment_checklist) {
+class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.RecorderCallBack {
 
     private val args: NoteFragmentArgs by navArgs()
     lateinit var noteViewModel: NoteViewModel
@@ -70,6 +91,31 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
     private lateinit var primaryAlarm: Alarm
     private var primaryText = ""
     var test = 0
+    private var mediaRecorder: MediaRecorder? = null
+    private var fileName: String? = null
+
+    private var mediaPlayer: MediaPlayer? = null
+    private var lastProgress = 0
+    private var isPlaying = false
+    private var last_index = -1
+
+    lateinit var recorderAdapter: RecorderAdapter
+    var recordNumber = 0
+    val recordingList = arrayListOf<Recording>()
+    val handler = Handler()
+
+    var imageNumber = 0
+
+    lateinit var imageAdapter: ImageAdapter
+    val imageList = arrayListOf<Image>()
+
+    private var camera_permission_granted = false
+    private var read_permission_granted = false
+    private var write_permission_granted = false
+    private var record_permission_granted = false
+    private var alarm_permission_granted = false
+    private var lastUri: Uri? = null
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -101,6 +147,73 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
             }
         })
 
+        val requestPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            read_permission_granted =
+                permissions[Manifest.permission.READ_EXTERNAL_STORAGE] ?: read_permission_granted
+            write_permission_granted =
+                permissions[Manifest.permission.WRITE_EXTERNAL_STORAGE] ?: write_permission_granted
+            camera_permission_granted =
+                permissions[Manifest.permission.CAMERA] ?: camera_permission_granted
+            record_permission_granted =
+                permissions[Manifest.permission.RECORD_AUDIO] ?: record_permission_granted
+            alarm_permission_granted =
+                permissions[Manifest.permission.SCHEDULE_EXACT_ALARM] ?: alarm_permission_granted
+        }
+
+        val takePhoto =
+            registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
+                if (isSuccess) {
+                    Log.i("result", "success")
+                    lifecycleScope.launch {
+                        val bitmap =
+                            MediaStore.Images.Media.getBitmap(
+                                requireContext().contentResolver,
+                                lastUri
+                            )
+                        manageImage(bitmap)
+                    }
+                }
+            }
+        val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let {
+                lifecycleScope.launch {
+                    val bitmap =
+                        MediaStore.Images.Media.getBitmap(requireContext().contentResolver, it)
+                    manageImage(bitmap)
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            getAllRecording()
+            getAllImages()
+        }
+
+        updateOrRequestPermission()
+
+        imageAdapter = ImageAdapter { image, pos ->
+            if (pos == -1) {
+                ImageDialog(
+                    requireContext(),
+                    image.originalBitmap
+                ).show()
+            } else {
+                val file = File(image.contentUri)
+                file.delete()
+                Log.i("result", image.contentUri)
+                imageList.remove(image)
+                noteViewModel.imageList.postValue(imageList)
+//                noteViewModel.imageList.postValue(
+//                    noteViewModel.imageList.value?.toMutableList()?.apply {
+//                        removeAt(pos)
+//                    }
+//                )
+            }
+
+        }
+
         hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
             alarmID = it
@@ -124,7 +237,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
         }
 
         add_item.setOnClickListener {
-            noteViewModel.checkBoxContent.add(CheckBoxContent("hello, dear", false))
+            noteViewModel.checkBoxContent.add(CheckBoxContent("hello", false))
             checkListAdapter.changeIndex(colorIndex)
             checkListAdapter.differ.submitList(noteViewModel.checkBoxContent)
 //            checkListAdapter.notifyDataSetChanged()
@@ -139,7 +252,8 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
         noteViewModel.boxCountCheck.observe(viewLifecycleOwner, Observer {
             if (noteViewModel.checkBoxContent.size<1)
                 tv_save.visibility = View.GONE
-            isChange = true
+//            isChange = true
+            Log.i("result", "check")
         })
 
         noteViewModel.contentsChange.observe(viewLifecycleOwner, Observer {
@@ -174,6 +288,11 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
         }
 
         btn_reminder.setOnClickListener {
+            val permissionsToRequest = mutableListOf<String>()
+            if (!alarm_permission_granted)
+                permissionsToRequest.add(Manifest.permission.SCHEDULE_EXACT_ALARM)
+            if (permissionsToRequest.isNotEmpty())
+                requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
             showDatePickerDialog()
         }
 
@@ -307,6 +426,143 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
 
                 }, lockOption).show()
             }
+
+            bottomSheetDialog.tv_add_voice.setOnClickListener {
+                val permissionsToRequest = mutableListOf<String>()
+                if (!read_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                if (!write_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                if (!record_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
+                if (permissionsToRequest.isNotEmpty())
+                    requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+
+                if (record_permission_granted) {
+                    RecorderDialog(requireContext(), object : RecorderDialogListener {
+                        override fun onStopRecorder() {
+                            try {
+                                mediaRecorder!!.stop()
+                                mediaRecorder!!.release()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                            mediaRecorder = null
+                            Toast.makeText(requireContext(), "stop recording.", Toast.LENGTH_SHORT)
+                                .show()
+                            addRecord()
+                        }
+                    }).show()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        mediaRecorder = MediaRecorder()
+                        mediaRecorder!!.setAudioSource(MediaRecorder.AudioSource.MIC)
+                        mediaRecorder!!.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+//                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+//                    mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                        val root = requireContext().getExternalFilesDir(null)
+                        val file = File(root?.absolutePath + "/NoteApplication/${noteID}/Audios/")
+                        if (!file.exists()) {
+                            file.mkdirs()
+                        }
+                        recordNumber++
+                        fileName =
+                            root?.absolutePath + "/NoteApplication/${noteID}/Audios/" + "$recordNumber.mp3"
+                        mediaRecorder!!.setOutputFile(fileName)
+                        mediaRecorder!!.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+
+                        try {
+                            mediaRecorder!!.prepare()
+                            mediaRecorder!!.start()
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                        }
+                    }
+                    bottomSheetDialog.dismiss()
+                }
+
+            }
+
+            bottomSheetDialog.tv_add_photo.setOnClickListener {
+                val permissionsToRequest = mutableListOf<String>()
+                if (!read_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                if (!write_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                if (!camera_permission_granted)
+                    permissionsToRequest.add(Manifest.permission.CAMERA)
+                if (permissionsToRequest.isNotEmpty())
+                    requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+                val imageBottomSheetDialog = BottomSheetDialog(
+                    requireContext(), R.style.CustomBottomSheetDialog
+                )
+                imageBottomSheetDialog.setContentView(R.layout.take_image_dialog)
+
+                imageBottomSheetDialog.img_camera.setOnClickListener {
+                    lifecycleScope.launchWhenStarted {
+                        getTmpFileUri().let {
+                            lastUri = it
+                            takePhoto.launch(it)
+                        }
+                    }
+//                    values = ContentValues()
+//                    values!!.put(MediaStore.Images.Media.TITLE, "New Picture")
+//                    values!!.put(MediaStore.Images.Media.DESCRIPTION, "From your Camera")
+//                    imageUri = requireContext().contentResolver.insert(
+//                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
+//                    )
+//                    val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//                    intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri)
+//                    startActivityForResult(intent, CAMERA_REQUEST_CODE)
+
+//                    val fileOutPutStream = FileOutputStream(imageFileName)
+//                    val bitmap = data.extras?.get("data") as Bitmap
+//                    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutPutStream)
+//                    fileOutPutStream.flush()
+//                    fileOutPutStream.close()
+//                    val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//                    intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri)
+//                    startActivityForResult(intent, CAMERA_REQUEST_CODE)
+//                    val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//                    startActivityForResult(cameraIntent, CAMERA_REQUEST_CODE)
+                    imageBottomSheetDialog.dismiss()
+                }
+                imageBottomSheetDialog.img_gallery.setOnClickListener {
+                    pickImage.launch("image/*")
+                    imageBottomSheetDialog.dismiss()
+//                    val intent = Intent(Intent.ACTION_PICK)
+//                    intent.type = "image/*"
+//                    startActivityForResult(intent, GALLERY_REQUEST_CODE)
+                }
+
+                imageBottomSheetDialog.show()
+                bottomSheetDialog.dismiss()
+            }
+
+            bottomSheetDialog.tv_share.setOnClickListener {
+                val items = noteViewModel.checkBoxContent
+                var text = ""
+                for (i in items.indices){
+                    text += if (items[i].check)
+                        "[+] ${items[i].content}\n"
+                    else
+                        "[-] ${items[i].content}\n"
+                }
+                val intent = Intent(Intent.ACTION_SEND)
+                val shareBody = text
+                if (shareBody != "") {
+                    intent.setType("text/plain")
+                    intent.putExtra(Intent.EXTRA_SUBJECT, "From Note App")
+                    intent.putExtra(Intent.EXTRA_TEXT, shareBody)
+                    startActivity(Intent.createChooser(intent, "اشتراک متن"))
+                } else
+                    Toast.makeText(
+                        requireContext(),
+                        "متنی برای اشتراک وجود ندارد",
+                        Toast.LENGTH_SHORT
+                    )
+                        .show()
+                bottomSheetDialog.dismiss()
+            }
             bottomSheetDialog.show()
         }
 
@@ -323,6 +579,337 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
                 }
 
             })
+
+        recorderAdapter.setOnItemClickListener {
+//            Log.i("Recorder","get record")
+//            mediaPlayer = MediaPlayer()
+//            playRecord(it.uri)
+        }
+        noteViewModel.recordingList.observe(viewLifecycleOwner, Observer { records ->
+            Log.i("Recorder", "submit record to list")
+            records?.let {
+                recorderAdapter.differ.submitList(records.toMutableList())
+            }
+        })
+        noteViewModel.imageList.observe(viewLifecycleOwner, Observer { images ->
+            images?.let {
+                imageAdapter.submitList(images.toMutableList())
+                Log.i("result", "submit images to list")
+            }
+        })
+    }
+
+    private fun updateOrRequestPermission() {
+        read_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+        write_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
+        camera_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+        record_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        alarm_permission_granted = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.SCHEDULE_EXACT_ALARM
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private suspend fun manageImage(bitmap: Bitmap) {
+        withContext(Dispatchers.IO) {
+            val root = requireContext().getExternalFilesDir(null)
+            val file = File(root?.absolutePath + "/NoteApplication/${noteID}/Images/")
+            if (!file.exists())
+                file.mkdirs()
+            imageNumber++
+            val imagePath =
+                root?.absolutePath + "/NoteApplication/${noteID}/Images/" + "$imageNumber.png"
+            try {
+                val thumbnail = getThumbnail(bitmap)
+                imageList.add(
+                    Image(
+                        UUID.randomUUID().toString(),
+                        imagePath,
+                        bitmap,
+                        thumbnail,
+                        "img"
+                    )
+                )
+                noteViewModel.imageList.postValue(imageList)
+                val writeToExternalStorage = FileOutputStream(imagePath)
+                bitmap.compress(Bitmap.CompressFormat.PNG, 85, writeToExternalStorage)
+                writeToExternalStorage.flush()
+                writeToExternalStorage.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private suspend fun getThumbnail(bitmap: Bitmap): Bitmap {
+        var thumbnail: Bitmap? = null
+        val wait = CoroutineScope(Dispatchers.IO).async {
+            thumbnail = ThumbnailUtils.extractThumbnail(bitmap, 128, 128)
+            return@async thumbnail
+        }
+        wait.await()
+        return thumbnail!!
+    }
+
+    private fun getTmpFileUri(): Uri {
+        val tmpFile =
+            File.createTempFile("tmp_image_file", ".png", requireContext().cacheDir).apply {
+                createNewFile()
+                deleteOnExit()
+            }
+        return FileProvider.getUriForFile(
+            requireContext().applicationContext,
+            "${requireContext().packageName}.provider",
+            tmpFile
+        )
+    }
+
+    private suspend fun getAllImages() {
+        rv_image_check.layoutManager = LinearLayoutManager(
+            requireContext(),
+            LinearLayoutManager.HORIZONTAL, false
+        )
+        rv_image_check.adapter = imageAdapter
+
+        withContext(Dispatchers.IO) {
+            val root = requireContext().getExternalFilesDir(null)
+            val path = root?.absolutePath + "/NoteApplication/${noteID}/Images"
+            val directory = File(path)
+            val files = directory.listFiles()
+            if (files != null) {
+                val nameArray = arrayListOf<Int>()
+                for (i in files.indices) {
+                    val fileName = files[i].name
+                    val tempName = fileName.substring(0, fileName.length - 4)
+                    nameArray.add(tempName.toInt())
+                }
+                if (nameArray.isNotEmpty()){
+                    nameArray.sort()
+                    imageNumber = nameArray[nameArray.lastIndex]
+
+                    for (i in 0 until nameArray.size) {
+                        val imageUri =
+                            root?.absolutePath + "/NoteApplication/${noteID}/Images/" + "${nameArray[i]}.png"
+                        val file = File(imageUri)
+                        val uri = Uri.fromFile(file)
+                        val bit =
+                            MediaStore.Images.Media.getBitmap(requireContext().contentResolver, uri)
+                        lifecycleScope.launch {
+                            val wait = CoroutineScope(Dispatchers.IO).async {
+                                val thumbnail = getThumbnail(bit)
+                                imageList.add(
+                                    Image(
+                                        UUID.randomUUID().toString(),
+                                        imageUri,
+                                        bit,
+                                        thumbnail,
+                                        "img"
+                                    )
+                                )
+                                return@async
+                            }
+                            wait.await()
+                            noteViewModel.imageList.postValue(imageList)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun removeRecord(record: Recording, position: Int) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            Log.i("Recorder", "delete: $position")
+            Log.i("result", record.uri)
+            val file = File(record.uri)
+            file.delete()
+            if (position == last_index) {
+                stopPlaying()
+                noteViewModel.recordPosition = 0
+            }
+            recordingList.remove(record)
+            noteViewModel.recordingList.postValue(recordingList)
+//            noteViewModel.recordingList.postValue(
+//                noteViewModel.recordingList.value!!.toMutableList().apply {
+//                    removeAt(position)
+//                }
+//            )
+        }
+    }
+
+    override fun getRecordItems(
+        record: Recording,
+        holder: RecorderAdapter.ViewHolder,
+        itemView: View,
+        position: Int
+    ) {
+        Log.i("Recorder", "get record: $position")
+        if (isPlaying) {
+            noteViewModel.recordPosition = 0
+            stopPlaying()
+            if (last_index == holder.adapterPosition) {
+                if (record.isPlaying) {
+                    record.isPlaying = false
+                    isPlaying = false
+                    noteViewModel.recordPosition = lastProgress
+                    if (colorIndex == 1)
+                        itemView.img_view_play.setImageResource(R.drawable.ic_play_white)
+                    else
+                        itemView.img_view_play.setImageResource(R.drawable.ic_play_black)
+//                    recorderAdapter.notifyItemChanged(last_index)
+                } else {
+                    playRecord(record.uri, holder, itemView, holder.adapterPosition)
+                    record.isPlaying = true
+                    if (colorIndex == 1)
+                        itemView.img_view_play.setImageResource(R.drawable.ic_stop_white)
+                    else
+                        itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
+                }
+            } else {
+                Log.i("Recorder", "notify last_index: $last_index")
+                handler.removeCallbacksAndMessages(null)
+                if (last_index != -1) {
+                    recorderAdapter.differ.currentList[last_index].isPlaying = false
+                    recorderAdapter.notifyItemChanged(last_index)
+                }
+                playRecord(record.uri, holder, itemView, holder.adapterPosition)
+                record.isPlaying = true
+                if (colorIndex == 1)
+                    itemView.img_view_play.setImageResource(R.drawable.ic_stop_white)
+                else
+                    itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
+            }
+        } else {
+            handler.removeCallbacksAndMessages(null)
+            if (last_index != holder.adapterPosition) {
+                noteViewModel.recordPosition = 0
+                if (last_index != -1)
+                    recorderAdapter.notifyItemChanged(last_index)
+            }
+            playRecord(record.uri, holder, itemView, holder.adapterPosition)
+            record.isPlaying = true
+            if (colorIndex == 1)
+                itemView.img_view_play.setImageResource(R.drawable.ic_stop_white)
+            else
+                itemView.img_view_play.setImageResource(R.drawable.ic_stop_black)
+        }
+    }
+
+    private fun playRecord(
+        uri: String,
+        holder: RecorderAdapter.ViewHolder,
+        itemView: View,
+        position: Int
+    ) {
+        mediaPlayer = MediaPlayer()
+        try {
+            mediaPlayer!!.setDataSource(uri)
+            mediaPlayer!!.prepare()
+            mediaPlayer!!.start()
+        } catch (e: IOException) {
+            Log.e("LOG_TAG", "prepare() failed")
+        }
+        isPlaying = true
+        if (noteViewModel.recordPosition != 0) {
+            Log.i("Recorder", "seekTo")
+            mediaPlayer!!.seekTo(noteViewModel.recordPosition)
+        }
+        mediaPlayer!!.setOnCompletionListener(MediaPlayer.OnCompletionListener {
+            Log.i("Recorder", "finish record")
+            Log.i("Recorder", "pos -> $position")
+            Log.i("Recorder", "holder -> ${holder.adapterPosition}")
+            noteViewModel.recordPosition = 0
+            stopPlaying()
+            isPlaying = false
+            recorderAdapter.differ.currentList[holder.adapterPosition].isPlaying = false
+            recorderAdapter.notifyItemChanged(holder.adapterPosition)
+        })
+        last_index = holder.adapterPosition
+        itemView.seekBar.max = mediaPlayer!!.duration
+
+
+        handler.postDelayed(object : Runnable {
+            override fun run() {
+                try {
+//                    itemView.seekBar.tag = holder.adapterPosition
+                    if (mediaPlayer != null && itemView.seekBar.tag == position) {
+                        itemView.seekBar.progress = mediaPlayer!!.currentPosition
+                        lastProgress = mediaPlayer!!.currentPosition
+                        last_index = holder.adapterPosition
+                        Log.i("Recorder", "holder.adapterPosition: ${last_index}")
+                        handler.postDelayed(this, 100)
+                    }
+                } catch (e: Exception) {
+                    itemView.seekBar.progress = 0
+                    recorderAdapter.notifyItemChanged(holder.adapterPosition)
+                }
+            }
+        }, 0)
+
+        itemView.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(p0: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (mediaPlayer != null && fromUser)
+                    mediaPlayer!!.seekTo(progress)
+            }
+
+            override fun onStartTrackingTouch(p0: SeekBar?) {
+            }
+
+            override fun onStopTrackingTouch(p0: SeekBar?) {
+            }
+        })
+    }
+
+    private suspend fun getAllRecording(){
+        val systemHeight = Resources.getSystem().displayMetrics.heightPixels
+        val listLayoutParams: LinearLayout.LayoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, systemHeight / 1.5.toInt(),
+        )
+        recorderAdapter = RecorderAdapter(noteViewModel, this)
+        rv_record_check.layoutManager =
+            LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+        rv_record_check.layoutParams = listLayoutParams
+        rv_record_check.adapter = recorderAdapter
+
+        withContext(Dispatchers.IO) {
+            val root = requireContext().getExternalFilesDir(null)
+            val path = root?.absolutePath + "/NoteApplication/${noteID}/Audios"
+            val directory = File(path)
+            val files = directory.listFiles()
+            if (files != null) {
+                val nameArray = arrayListOf<Int>()
+                for (i in files.indices) {
+                    val fileName = files[i].name
+                    val tempName = fileName.substring(0, fileName.length - 4)
+                    nameArray.add(tempName.toInt())
+                }
+                nameArray.sort()
+                recordNumber = nameArray[nameArray.lastIndex]
+                for (i in 0 until nameArray.size) {
+                    val recordingUri =
+                        root?.absolutePath + "/NoteApplication/${noteID}/Audios/" + "${nameArray[i]}.mp3"
+                    recordingList.add(Recording(recordingUri, nameArray[i].toString(), false))
+                }
+                noteViewModel.recordingList.postValue(recordingList)
+            }
+        }
+    }
+
+    private fun addRecord(){
+        recordingList.add(Recording(fileName!!, "dummy", false))
+        noteViewModel.recordingList.postValue(recordingList)
     }
 
     private fun saveNote() {
@@ -791,9 +1378,15 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
     }
 
     private fun setUpRecycler() {
+//        val systemHeight = Resources.getSystem().displayMetrics.heightPixels
+//        val listLayoutParams: LinearLayout.LayoutParams = LinearLayout.LayoutParams(
+//            LinearLayout.LayoutParams.MATCH_PARENT, systemHeight / 1.5.toInt(),
+//        )
         rv_check_list.apply {
+//            itemAnimator = null
             adapter = checkListAdapter
             layoutManager = LinearLayoutManager(requireContext(),LinearLayoutManager.VERTICAL,false)
+//            layoutParams = listLayoutParams
         }
     }
 
@@ -804,5 +1397,18 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist) {
         noteViewModel.setSelectedSortOption(2)
         noteViewModel.checkBoxContent.clear()
         noteViewModel.contentsChange.value = false
+    }
+
+    private fun stopPlaying() {
+        try {
+            mediaPlayer!!.stop()
+            mediaPlayer!!.reset()
+            mediaPlayer!!.release()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        Log.i("Recorder", "onStop called mediaPlayer=null and isPlaying=false")
+        mediaPlayer = null
+        isPlaying = false
     }
 }

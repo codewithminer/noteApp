@@ -61,7 +61,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import androidx.core.view.drawToBitmap
 import androidx.lifecycle.lifecycleScope
-import com.example.noteapp.BuildConfig
 import com.example.noteapp.ui.dialog.*
 import android.R.attr.data
 import android.R.attr.thumb
@@ -90,17 +89,11 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     private lateinit var primaryAlarm: Alarm
     private var primaryText = ""
 
-    private var output: String? = null
     private var mediaRecorder: MediaRecorder? = null
-    private var state: Boolean = false
     private var fileName: String? = null
-
-    private val RECORD_AUDIO_REQUEST_CODE = 101
-    private val CAMERA_REQUEST_CODE = 102
 
     private var mediaPlayer: MediaPlayer? = null
     private var lastProgress = 0
-    private val mHandler = Handler()
     private var isPlaying = false
     private var last_index = -1
 
@@ -109,10 +102,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     val recordingList = arrayListOf<Recording>()
     val handler = Handler()
 
-    private var imageFileName: String? = null
     var imageNumber = 0
-    var values: ContentValues? = null
-    var imageUri: Uri? = null
 
     lateinit var imageAdapter: ImageAdapter
     val imageList = arrayListOf<Image>()
@@ -202,6 +192,21 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
 
         updateOrRequestPermission()
+
+        imageAdapter = ImageAdapter { image, pos ->
+            if (pos == -1) {
+                ImageDialog(
+                    requireContext(),
+                    image.originalBitmap
+                ).show()
+            } else {
+                val file = File(image.contentUri)
+                file.delete()
+                Log.i("result", image.contentUri)
+                imageList.remove(image)
+                noteViewModel.imageList.postValue(imageList)
+            }
+        }
 
         hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
@@ -534,8 +539,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             bottomSheetDialog.show()
         }
 
-
-
         tv_markdown.setOnClickListener {
             view.let { activity?.hideKeyboard(it) }
             final_text = et_todo.text.toString()
@@ -674,33 +677,12 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
 
         return FileProvider.getUriForFile(
             requireContext().applicationContext,
-            "${BuildConfig.APPLICATION_ID}.provider",
+            "${requireContext().packageName}.provider",
             tmpFile
         )
     }
 
-
     private suspend fun getAllImages() {
-        imageAdapter = ImageAdapter { image, pos ->
-            if (pos == -1) {
-                ImageDialog(
-                    requireContext(),
-                    image.originalBitmap
-                ).show()
-            } else {
-                val file = File(image.contentUri)
-                file.delete()
-                Log.i("result", image.contentUri)
-                imageList.remove(image)
-                noteViewModel.imageList.postValue(imageList)
-//                noteViewModel.imageList.postValue(
-//                    noteViewModel.imageList.value?.toMutableList()?.apply {
-//                        removeAt(pos)
-//                    }
-//                )
-            }
-
-        }
         rv_image.layoutManager = LinearLayoutManager(
             requireContext(),
             LinearLayoutManager.HORIZONTAL, false
@@ -753,7 +735,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
     }
 
-
     override fun removeRecord(record: Recording, position: Int) {
         lifecycleScope.launch(Dispatchers.IO) {
             Log.i("Recorder", "delete: $position")
@@ -764,11 +745,13 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 stopPlaying()
                 noteViewModel.recordPosition = 0
             }
-            noteViewModel.recordingList.postValue(
-                noteViewModel.recordingList.value!!.toMutableList().apply {
-                    removeAt(position)
-                }
-            )
+            recordingList.remove(record)
+            noteViewModel.recordingList.postValue(recordingList)
+//            noteViewModel.recordingList.postValue(
+//                noteViewModel.recordingList.value!!.toMutableList().apply {
+//                    removeAt(position)
+//                }
+//            )
         }
     }
 
@@ -896,14 +879,14 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     }
 
     private suspend fun getAllRecording(){
-        val systemHeight = Resources.getSystem().displayMetrics.heightPixels
-        val listLayoutParams: LinearLayout.LayoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, systemHeight / 1.5.toInt(),
-        )
+//        val systemHeight = Resources.getSystem().displayMetrics.heightPixels
+//        val listLayoutParams: LinearLayout.LayoutParams = LinearLayout.LayoutParams(
+//            LinearLayout.LayoutParams.MATCH_PARENT, systemHeight / 1.5.toInt(),
+//        )
         recorderAdapter = RecorderAdapter(noteViewModel, this)
         rv_record.layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
-        rv_record.layoutParams = listLayoutParams
+//        rv_record.layoutParams = listLayoutParams
         rv_record.adapter = recorderAdapter
 
         withContext(Dispatchers.IO) {
@@ -1411,78 +1394,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         noteViewModel.imageList.postValue(null)
         noteViewModel.recordPosition = 0
     }
-
-//    private fun getPermissionToRecordAudio() {
-//        if (ContextCompat.checkSelfPermission(
-//                requireContext(),
-//                Manifest.permission.RECORD_AUDIO
-//            ) != PackageManager.PERMISSION_GRANTED
-//            || ContextCompat.checkSelfPermission(
-//                requireContext(),
-//                Manifest.permission.READ_EXTERNAL_STORAGE
-//            ) != PackageManager.PERMISSION_GRANTED
-//            || ContextCompat.checkSelfPermission(
-//                requireContext(),
-//                Manifest.permission.WRITE_EXTERNAL_STORAGE
-//            ) != PackageManager.PERMISSION_GRANTED
-//        ) {
-//            requestPermissions(
-//                arrayOf(
-//                    Manifest.permission.READ_EXTERNAL_STORAGE,
-//                    Manifest.permission.RECORD_AUDIO,
-//                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-//                ), RECORD_AUDIO_REQUEST_CODE
-//            )
-//        }
-//    }
-
-    private fun getPermissionToTakePhoto() {
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(arrayOf(Manifest.permission.CAMERA), CAMERA_REQUEST_CODE)
-        }
-    }
-
-    // Callback with the request from calling requestPermissions(...)
-//    override fun onRequestPermissionsResult(
-//        requestCode: Int,
-//        permissions: Array<String>,
-//        grantResults: IntArray
-//    ) {
-//        // Make sure it's our original READ_CONTACTS request
-//        if (requestCode == RECORD_AUDIO_REQUEST_CODE) {
-//            if (grantResults.size == 3 &&
-//                grantResults[0] == PackageManager.PERMISSION_GRANTED &&
-//                grantResults[1] == PackageManager.PERMISSION_GRANTED &&
-//                grantResults[2] == PackageManager.PERMISSION_GRANTED
-//            ) {
-//                //Toast.makeText(this, "Record Audio permission granted", Toast.LENGTH_SHORT).show();
-//            } else {
-//                Toast.makeText(
-//                    requireContext(),
-//                    "You must give permissions to use this app",
-//                    Toast.LENGTH_SHORT
-//                ).show()
-////                finishAffinity(requireActivity())
-//            }
-//        }
-//        if (requestCode == CAMERA_REQUEST_CODE) {
-//            if (grantResults.size == 1 &&
-//                grantResults[0] == PackageManager.PERMISSION_GRANTED
-//            ) {
-//
-//            } else {
-//                Toast.makeText(
-//                    requireContext(),
-//                    "You must give permissions to use this app",
-//                    Toast.LENGTH_SHORT
-//                ).show()
-//            }
-//        }
-//    }
 
     private fun stopPlaying() {
         try {

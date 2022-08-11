@@ -75,7 +75,7 @@ fun getForegroundColor(index: Int): String{
 }
 
 
-fun markDown(content: String, color: Int): String {
+fun markDown(content: String, color: Int, styleTag: Boolean = true): String {
     var background = "#FFFFFF"
     var foreground = "#000000"
     var linkColor = ""
@@ -142,8 +142,8 @@ fun markDown(content: String, color: Int): String {
         }
         result = makeBold(line[i])
         result = makeItalics(result)
-        result = makeHighLight(result)
-        result = makeLink(result)
+        result = makeHighLight(result,highlightBGC)
+        result = makeLink(result,linkColor)
         result = makeLiTag(result)
         result = makeHeading(result)
         if (!Heading && !UL_FLAG && isPersianWord(result))
@@ -161,51 +161,79 @@ fun markDown(content: String, color: Int): String {
         htmlText += result
         UL_FLAG = false
     }
+    Log.i("htmlText",htmlText)
+    if ( htmlText.contains("!@#")){
+        htmlText = convertCheckboxToHtmlStyle(result)
+    }
+    Log.i("style-tag", styleTag.toString())
+    if (styleTag){
+        return "<html lang=\"fa-IR\">\n" +
+                "<head>\n" +
+                "<meta charset=\"utf-8\">\n"+
+                "<style>\n" +
+                "mark{\n" +
+                "background-color: $highlightBGC;\n" +
+                "padding: 2px 2px;"+
+                "color: $highlightColor;}\n" +
+                "p{\n" +
+                "color: $foreground;\n"+
+                "}\n"+
+                "h1{\n" +
+                "color: $foreground;\n"+
+                "}\n"+
+                "h2{\n" +
+                "color: $foreground;\n"+
+                "}\n"+
+                "h3{\n" +
+                "color: $foreground;\n"+
+                "}\n"+
+                "h4{\n" +
+                "color: $foreground;\n"+
+                "}\n"+
+                "h5{\n" +
+                "color: $foreground;\n"+
+                "}\n"+
+                "h6{\n" +
+                "color: $foreground;\n"+
+                "}\n"+
+                "a:link {\n" +
+                "  color: $linkColor;\n" +
+                "  background-color: transparent;\n" +
+                "}"+
+                "li{\n" +
+                "color:$foreground;\n"+
+                "}\n"+
+                "</style>\n" +
+                "</head>\n" +
+                "<body style = \"background-color:$background \">\n" +
+                "$htmlText\n<br></br><br></br><br></br>" +
+                "</body>" +
+                "</html>"
+    }else{
+        return "<html lang=\"fa-IR\">\n" +
+                "<head>\n" +
+                "<meta charset=\"utf-8\">\n"+
+                "</head>\n" +
+                "<body style = \"background-color:$background \">\n" +
+                "$htmlText\n" +
+                "</body>" +
+                "</html>"
+    }
+}
 
-
-    Log.i("tag", htmlText)
-    return "<html lang=\"fa-IR\">\n" +
-            "<head>\n" +
-            "<meta charset=\"utf-8\">"+
-            "<style>\n" +
-            "mark{\n" +
-            "background-color: $highlightBGC;\n" +
-            "padding: 2px 2px;"+
-            "color: $highlightColor;}\n" +
-            "p{\n" +
-            "color: $foreground;\n"+
-            "}\n"+
-            "h1{\n" +
-            "color: $foreground;\n"+
-            "}\n"+
-            "h2{\n" +
-            "color: $foreground;\n"+
-            "}\n"+
-            "h3{\n" +
-            "color: $foreground;\n"+
-            "}\n"+
-            "h4{\n" +
-            "color: $foreground;\n"+
-            "}\n"+
-            "h5{\n" +
-            "color: $foreground;\n"+
-            "}\n"+
-            "h6{\n" +
-            "color: $foreground;\n"+
-            "}\n"+
-            "a:link {\n" +
-            "  color: $linkColor;\n" +
-            "  background-color: transparent;\n" +
-            "}"+
-            "li{\n" +
-            "color:$foreground;\n"+
-            "}\n"+
-            "</style>\n" +
-            "</head>\n" +
-            "<body style = background-color:$background \">\n" +
-            "$htmlText\n<br></br><br></br><br></br>" +
-            "</body>" +
-            "</html>"
+fun convertCheckboxToHtmlStyle(text: String): String {
+    var result = text.substring(3,text.length - 8)
+    var words = result.split("!@#")
+    var finalText = "<p>"
+    for (i in words.indices){
+        val word = words[i]
+        finalText += if (word[1] == 'x')
+            "&#x2714; ${word.substring(3, word.length)}<br>"
+        else
+            "&#x2716; ${word.substring(3, word.length)}<br>"
+    }
+    Log.i("htmlText", finalText)
+    return "$finalText</p>"
 }
 
 fun isLi(content: String): Boolean {
@@ -286,7 +314,7 @@ fun makeHeading(content: String): String {
     }
 }
 
-fun makeHighLight(content: String): String {
+fun makeHighLight(content: String, color: String): String {
     if (content == "")
         return content
     var text = content
@@ -296,17 +324,17 @@ fun makeHighLight(content: String): String {
             positions.add(i)
             if (positions.size == 2){
                 var world = content.substring(positions[0]+1, positions[1])
-                world = "<mark>$world</mark>"
+                world = "<mark style=\"background-color:$color; padding: 2px 2px; \">$world</mark>"
                 text = content.replaceRange(positions[0],positions[1]+1,world)
                 Log.i("markdown",text)
-                return makeHighLight(text)
+                return makeHighLight(text, color)
             }
         }
     }
     return text
 }
 
-fun makeLink(content: String): String {
+fun makeLink(content: String, color: String): String {
     var text = content
     var squareF1 = false
     var squareF2 = false
@@ -338,8 +366,8 @@ fun makeLink(content: String): String {
         if ((square1 < square2) && (brackets1 < brackets2) && (square2 < brackets1) && (square1 != -1 && square2 != -1 && brackets1 != -1 && brackets2 != -1)) {
             val w = content.substring(square1 + 1, square2)
             val link = content.substring(brackets1 + 1, brackets2)
-            text = content.replaceRange(square1, brackets2 + 1, "<a href=\"$link\">$w</a>")
-            return makeLink(text)
+            text = content.replaceRange(square1, brackets2 + 1, "<a style=\" background-color:transparent; color:$color \" href=\"$link\">$w</a>")
+            return makeLink(text, color)
         }
     }
     return text

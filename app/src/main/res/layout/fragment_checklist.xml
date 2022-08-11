@@ -32,51 +32,73 @@
                 app:mtitle="@string/noteToolbarTitle"/>
         </com.google.android.material.appbar.AppBarLayout>
 
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_check_list"
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintHeight_max="580dp"
-            app:layout_constrainedHeight="true"
-            android:textSize="16sp"
-            android:hint="@string/noteEditTextHintTitle"
-            android:padding="8dp"
+            android:layout_height="0dp"
             app:layout_constraintTop_toBottomOf="@id/appBarLayout"
-            app:layout_constraintBottom_toTopOf="@+id/add_item"
-            android:inputType="text|textMultiLine"
-            android:gravity="top"
-            android:textColor="#FF000000"
-            android:background="@drawable/edit_text_rounded"/>
+            app:layout_constraintBottom_toTopOf="@+id/navigation_todo">
 
-        <LinearLayout
-            android:id="@+id/add_item"
-            android:layout_width="wrap_content"
-            android:layout_height="60dp"
-            android:orientation="horizontal"
-            android:gravity="center"
-            app:layout_constraintTop_toBottomOf="@+id/rv_check_list"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent">
-
-            <ImageView
-                android:id="@+id/img_add_checklist"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/ic_add_to_list"/>
-
-            <TextView
-                android:id="@+id/tv_add_checklist"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:layout_gravity="center_vertical"
-                android:text="اضافه کردن به لیست"
-                android:textColor="@color/gray_black"
-                android:layout_marginStart="8dp"/>
+                android:orientation="vertical">
 
-        </LinearLayout>
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_image_check"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"/>
 
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_check_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:textSize="16sp"
+                    android:hint="@string/noteEditTextHintTitle"
+                    android:padding="8dp"
+                    app:layout_constraintTop_toBottomOf="@id/appBarLayout"
+                    app:layout_constraintBottom_toTopOf="@+id/add_item"
+                    android:inputType="text|textMultiLine"
+                    android:textColor="#FF000000"
+                    android:background="@drawable/edit_text_rounded"/>
+                <LinearLayout
+                    android:id="@+id/add_item"
+                    android:layout_width="wrap_content"
+                    android:layout_height="60dp"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_gravity="center"
+                    app:layout_constraintTop_toBottomOf="@+id/rv_check_list"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent">
+
+                    <ImageView
+                        android:id="@+id/img_add_checklist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/ic_add_to_list"/>
+
+                    <TextView
+                        android:id="@+id/tv_add_checklist"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:layout_gravity="center_vertical"
+                        android:text="اضافه کردن به لیست"
+                        android:textColor="@color/gray_black"
+                        android:layout_marginStart="8dp"/>
+
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_record_check"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
 
         <LinearLayout
             android:id="@+id/navigation_todo"
@@ -136,30 +158,6 @@
 
 
         </LinearLayout>
-
-<!--        <com.google.android.material.bottomnavigation.BottomNavigationView-->
-<!--            android:id="@+id/navigation_todo"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            app:menu="@menu/menu_todo"-->
-<!--            app:layout_constraintTop_toBottomOf="@id/et_todo"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent" />-->
-
-
-
-<!--        <Button-->
-<!--            android:id="@+id/btn_save"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_marginTop="16dp"-->
-<!--            android:layout_marginBottom="16dp"-->
-<!--            android:layout_marginRight="42dp"-->
-<!--            android:layout_marginLeft="42dp"-->
-<!--            app:layout_constraintTop_toBottomOf="@id/et_todo"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintEnd_toEndOf="parent"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"-->
-<!--            android:text="ذخیره"/>-->
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

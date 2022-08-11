@@ -51,13 +51,13 @@ class CheckListAdapter(
 //            et_checkbox_list.setText(noteViewModel.checkBoxContent[holder.adapterPosition])
 //            Log.i("checkbox", noteViewModel.checkBoxContent[holder.adapterPosition].toString())
             if (index == 2){
-                img_drag.setImageResource(R.drawable.ic_drag_white)
                 checkbox.buttonTintList = ColorStateList.valueOf(resources.getColor(R.color.white))
                 et_checkbox_list.setTextColor(Color.parseColor(getBackgroundColor(1)))
+                remove_checkbox.setImageResource(R.drawable.ic_cancel_white)
             }else{
-                img_drag.setImageResource(R.drawable.ic_drag_black)
                 checkbox.buttonTintList = ColorStateList.valueOf(resources.getColor(R.color.gray_black))
                 et_checkbox_list.setTextColor(Color.parseColor(getBackgroundColor(2)))
+                remove_checkbox.setImageResource(R.drawable.ic_cancel_black)
             }
         }
         holder.itemView.et_checkbox_list.setOnFocusChangeListener { view, hasFocus ->

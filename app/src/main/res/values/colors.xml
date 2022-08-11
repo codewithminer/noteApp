@@ -34,4 +34,6 @@
     <color name="dateColor">#009688</color>
 
     <color name="dialog_color">#F6F6F6</color>
+    
+    <color name="LT_GRAY">#555555</color>
 </resources>
