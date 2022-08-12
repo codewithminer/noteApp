@@ -19,6 +19,8 @@
 + Fix Storage problem for sdk 29 & above and below
 + Go to mark activity and back, you see a lot of images
 !! change nested scroll view location
+!! Alarm notification (repeat every day - delete correctly)
+!! check image and record adapter initiate
 + change background in dark mode
 + remove a photo, take another, when you back you see removed image again.
 ====================================================================================================
@@ -30,11 +32,11 @@
     + Change item-view on main-fragment -> (don't show mark signs , show bold dot instead # signs
     +                                        for checkbox items)
     + Create custom text-style for sharing checkboxes ex-> ([x] item1 , [] item2)
-    ? Create nice Lock-Screen dialog design
+    + Create nice Lock-Screen dialog design
     * use corner for image recycler background
-    ? Try better style for records
-    ? Try better style for sort-dialog
-    ? Use same icon theme
+    + Try better style for records
+    + Try better style for sort-dialog
+    + Use same icon theme
     ? Use icon for Application
     ? blue background is similar to blue foreground
     + Implement Voice section and Image section to CheckBox

@@ -1,104 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_gravity="end">
+    android:background="@drawable/dialog_bg"
+    app:cardCornerRadius="6dp"
+    android:layout_margin="6dp"
+    app:cardElevation="3dp">
 
     <LinearLayout
-        android:id="@+id/l1"
-        android:layout_width="match_parent"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        android:layout_gravity="center"
+        android:orientation="vertical">
 
-        <RadioButton
+        <androidx.appcompat.widget.AppCompatRadioButton
             android:id="@+id/radio_filter1"
-            android:layout_width="0dp"
-            android:layout_weight=".1"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="5dp"
-            android:gravity="end|center_vertical"/>
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/filterLevelOne"/>
 
-        <TextView
-            android:id="@+id/sortByDateLatest"
-            android:layout_width="0dp"
-            android:layout_weight=".9"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="6dp"
-            android:gravity="start|center_vertical"
-            android:text="@string/filterLevelOne"
-            android:textColor="@color/gray_black"
-            android:textSize="16sp" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/l2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/l1">
-
-        <RadioButton
+        <androidx.appcompat.widget.AppCompatRadioButton
             android:id="@+id/radio_filter2"
-            android:layout_width="0dp"
-            android:layout_weight=".1"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="5dp"
-            android:gravity="end|center_vertical"/>
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/filterLevelTwo"/>
 
-        <TextView
-            android:id="@+id/sortByDateOldest"
-            android:layout_width="0dp"
-            android:layout_weight=".9"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="6dp"
-            android:gravity="start|center_vertical"
-            android:text="@string/filterLevelTwo"
-            android:textColor="@color/gray_black"
-            android:textSize="16sp" />
 
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/l3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/l2">
-
-        <RadioButton
+        <androidx.appcompat.widget.AppCompatRadioButton
             android:id="@+id/radio_filter3"
-            android:layout_width="0dp"
-            android:layout_weight=".1"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="5dp"
-            android:gravity="end|center_vertical"/>
-
-        <TextView
-            android:id="@+id/sortByColor"
-            android:layout_width="0dp"
-            android:layout_weight=".9"
-            android:layout_height="match_parent"
-            android:layout_marginEnd="6dp"
-            android:gravity="start|center_vertical"
-            android:text="@string/filterLevelThree"
-            android:textColor="@color/gray_black"
-            android:textSize="16sp" />
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/filterLevelThree"/>
 
     </LinearLayout>
 
 
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+</com.google.android.material.card.MaterialCardView>

@@ -1,6 +1,8 @@
 package com.example.noteapp.ui.dialog
 
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Window
 import android.view.WindowManager
@@ -21,7 +23,7 @@ class FilterDialog(context: Context, var filterDialogListener: FilterDialogListe
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT
         )
-
+        window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         when(sortOption){
             1 ->{ radio_filter1.isChecked = true
                 radio_filter2.isChecked = false

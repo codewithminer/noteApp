@@ -1286,7 +1286,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 btn_add_box.setImageResource(R.drawable.ic_add_box_black)
                 btn_color.setImageResource(R.drawable.ic_color)
                 btn_delete.setImageResource(R.drawable.ic_delete)
-                btn_reminder.setImageResource(R.drawable.ic_reminder)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_black)
 
             }
             2 -> {
@@ -1294,7 +1294,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 btn_add_box.setImageResource(R.drawable.ic_add_box_white)
                 btn_color.setImageResource(R.drawable.ic_color_white)
                 btn_delete.setImageResource(R.drawable.ic_delete_white)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_white)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_white)
                 tv_save.setTextColor(Color.parseColor(getForegroundColor(index)))
 
             }
@@ -1303,7 +1303,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 btn_add_box.setImageResource(R.drawable.ic_add_box_red)
                 btn_color.setImageResource(R.drawable.ic_color_red)
                 btn_delete.setImageResource(R.drawable.ic_delete_red)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_red)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_red)
             }
             4 -> {
 
@@ -1311,28 +1311,28 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 btn_add_box.setImageResource(R.drawable.ic_add_box_green)
                 btn_color.setImageResource(R.drawable.ic_color_green)
                 btn_delete.setImageResource(R.drawable.ic_delete_green)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_green)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_green)
             }
             5 -> {
                 backBtn.setImageResource(R.drawable.ic_back_blue)
                 btn_add_box.setImageResource(R.drawable.ic_add_box_blue)
                 btn_color.setImageResource(R.drawable.ic_color_blue)
                 btn_delete.setImageResource(R.drawable.ic_delete_blue)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_blue)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_blue)
             }
             6 -> {
                 backBtn.setImageResource(R.drawable.ic_back_yellow)
                 btn_add_box.setImageResource(R.drawable.ic_add_box_yellow)
                 btn_color.setImageResource(R.drawable.ic_color_yellow)
                 btn_delete.setImageResource(R.drawable.ic_delete_yellow)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_yellow)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_yellow)
             }
             7 -> {
                 backBtn.setImageResource(R.drawable.ic_back_pink)
                 btn_add_box.setImageResource(R.drawable.ic_add_box_pink)
                 btn_color.setImageResource(R.drawable.ic_color_pink)
                 btn_delete.setImageResource(R.drawable.ic_delete_pink)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_pink)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_pink)
             }
         }
         if (isPlaying)

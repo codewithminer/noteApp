@@ -19,6 +19,6 @@
     <item
         android:id="@+id/reminder"
         android:title="reminder"
-        android:icon="@drawable/ic_reminder"/>
+        android:icon="@drawable/ic_alarm_black"/>
 
 </menu>

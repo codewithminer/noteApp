@@ -1273,7 +1273,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 btn_add_box.setImageResource(R.drawable.ic_add_box_black)
                 btn_color.setImageResource(R.drawable.ic_color)
                 btn_delete.setImageResource(R.drawable.ic_delete)
-                btn_reminder.setImageResource(R.drawable.ic_reminder)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_black)
                 img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
                 tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
@@ -1282,7 +1282,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 btn_add_box.setImageResource(R.drawable.ic_add_box_white)
                 btn_color.setImageResource(R.drawable.ic_color_white)
                 btn_delete.setImageResource(R.drawable.ic_delete_white)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_white)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_white)
                 tv_save.setTextColor(Color.parseColor(getForegroundColor(index)))
                 img_add_checklist.setImageResource(R.drawable.ic_add_to_list_white)
                 tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(2)))
@@ -1292,7 +1292,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 btn_add_box.setImageResource(R.drawable.ic_add_box_red)
                 btn_color.setImageResource(R.drawable.ic_color_red)
                 btn_delete.setImageResource(R.drawable.ic_delete_red)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_red)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_red)
                 img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
                 tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
@@ -1302,7 +1302,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 btn_add_box.setImageResource(R.drawable.ic_add_box_green)
                 btn_color.setImageResource(R.drawable.ic_color_green)
                 btn_delete.setImageResource(R.drawable.ic_delete_green)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_green)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_green)
                 img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
                 tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
@@ -1311,7 +1311,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 btn_add_box.setImageResource(R.drawable.ic_add_box_blue)
                 btn_color.setImageResource(R.drawable.ic_color_blue)
                 btn_delete.setImageResource(R.drawable.ic_delete_blue)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_blue)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_blue)
                 img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
                 tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
@@ -1320,7 +1320,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 btn_add_box.setImageResource(R.drawable.ic_add_box_yellow)
                 btn_color.setImageResource(R.drawable.ic_color_yellow)
                 btn_delete.setImageResource(R.drawable.ic_delete_yellow)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_yellow)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_yellow)
                 img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
                 tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
@@ -1329,7 +1329,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 btn_add_box.setImageResource(R.drawable.ic_add_box_pink)
                 btn_color.setImageResource(R.drawable.ic_color_pink)
                 btn_delete.setImageResource(R.drawable.ic_delete_pink)
-                btn_reminder.setImageResource(R.drawable.ic_reminder_pink)
+                btn_reminder.setImageResource(R.drawable.ic_alarm_pink)
                 img_add_checklist.setImageResource(R.drawable.ic_add_to_list)
                 tv_add_checklist.setTextColor(Color.parseColor(getForegroundColor(1)))
             }
