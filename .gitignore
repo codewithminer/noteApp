@@ -10,7 +10,7 @@
 .DS_Store
 /build
 /captures
-/app/src/main/java/com/example/noteapp/Bug&Todo
+/app/src/main/java/com/example/noteapp/Bug&Todo.txt
 .externalNativeBuild
 .cxx
 local.properties
