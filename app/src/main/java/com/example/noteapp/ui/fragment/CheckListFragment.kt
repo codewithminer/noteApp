@@ -17,6 +17,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.provider.MediaStore
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
@@ -85,6 +86,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
     private var colorIndex = 1
     private var noteID: String = "-1"
     private var alarmID: Int = -1
+    private var saveAlarmId: Int = -1
     private var isChange = false
     private var isAlarmChanged = false
     private var isLock = false
@@ -120,13 +122,13 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         noteViewModel = (activity as MainActivity).noteViewModel
-        noteID = args.id.toString()
+        noteID = args.id
         if (noteID == "-1")
             noteID = UUID.randomUUID().toString()
         checkListAdapter = CheckListAdapter(noteViewModel)
         setUpRecycler()
         Log.i("time", "primary noteId is $noteID")
-        noteViewModel.getNote(args.id.toString()).observe(viewLifecycleOwner, Observer { note ->
+        noteViewModel.getNote(args.id).observe(viewLifecycleOwner, Observer { note ->
             note?.let {
                 noteID = note.id
                 primaryText = note.content
@@ -146,6 +148,22 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 setUpNoteFragmentDesign(colorIndex)
             }
         })
+
+        imageAdapter = ImageAdapter { image, pos ->
+            if (pos == -1) {
+                ImageDialog(
+                    requireContext(),
+                    image.originalBitmap
+                ).show()
+            } else {
+                val file = File(image.contentUri)
+                file.delete()
+                Log.i("result", image.contentUri)
+                imageList.remove(image)
+                noteViewModel.imageList.postValue(imageList)
+            }
+
+        }
 
         val requestPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
@@ -192,27 +210,6 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
         }
 
         updateOrRequestPermission()
-
-        imageAdapter = ImageAdapter { image, pos ->
-            if (pos == -1) {
-                ImageDialog(
-                    requireContext(),
-                    image.originalBitmap
-                ).show()
-            } else {
-                val file = File(image.contentUri)
-                file.delete()
-                Log.i("result", image.contentUri)
-                imageList.remove(image)
-                noteViewModel.imageList.postValue(imageList)
-//                noteViewModel.imageList.postValue(
-//                    noteViewModel.imageList.value?.toMutableList()?.apply {
-//                        removeAt(pos)
-//                    }
-//                )
-            }
-
-        }
 
         hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
@@ -688,7 +685,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
             val path = root?.absolutePath + "/NoteApplication/${noteID}/Images"
             val directory = File(path)
             val files = directory.listFiles()
-            if (files != null) {
+            if (files != null ) {
                 val nameArray = arrayListOf<Int>()
                 for (i in files.indices) {
                     val fileName = files[i].name
@@ -895,7 +892,8 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                     val tempName = fileName.substring(0, fileName.length - 4)
                     nameArray.add(tempName.toInt())
                 }
-                nameArray.sort()
+                if (nameArray.isNotEmpty()){
+                     nameArray.sort()
                 recordNumber = nameArray[nameArray.lastIndex]
                 for (i in 0 until nameArray.size) {
                     val recordingUri =
@@ -903,6 +901,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                     recordingList.add(Recording(recordingUri, nameArray[i].toString(), false))
                 }
                 noteViewModel.recordingList.postValue(recordingList)
+                }
             }
         }
     }
@@ -1040,7 +1039,20 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
         reminderAdapter.differ.submitList(date)
         bottomSheetDialog.tv_year_reminder.text = date[0].Year
         bottomSheetDialog.make_alarm.setOnClickListener {
-
+            alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                when {
+                    alarmManager.canScheduleExactAlarms() -> {
+                    }
+                    else -> {
+                        Intent().apply {
+                            action = Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM
+                        }.also {
+                            startActivity(it)
+                        }
+                    }
+                }
+            }
             val alarmDate = reminderAdapter.getSelectedDate()
             val alarmHour = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 bottomSheetDialog.layout_time_picker.hour
@@ -1079,14 +1091,16 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
                 )
                 calendar.timeInMillis
                 var alarm: Alarm? = null
-                alarm = if (alarmID == -1) {
+                alarm = if (alarmID == -1 && saveAlarmId == -1) {
+                    Log.i("primary", "alarmID == -1")
                     Alarm(
                         0, alarmDate.Year.toInt(), alarmDate.Month, alarmDate.Day.toInt(),
                         alarmHour, alarmMinute
                     )
                 } else {
+                    Log.i("primary", "alarmID != -1")
                     Alarm(
-                        alarmID, alarmDate.Year.toInt(), alarmDate.Month, alarmDate.Day.toInt(),
+                        saveAlarmId, alarmDate.Year.toInt(), alarmDate.Month, alarmDate.Day.toInt(),
                         alarmHour, alarmMinute
                     )
                 }
@@ -1113,14 +1127,17 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
         }
 
         bottomSheetDialog.remove_alarm.setOnClickListener {
-            primaryAlarm.let {
-                cancelAlarm()
-                ic_alarm_toolbar.visibility = View.GONE
-                isChange = isChange.or(true)    // changed Alarm
-                noteViewModel.alarmId.value = -1
-                noteViewModel.contentsChange.value = true
-                bottomSheetDialog.dismiss()
+            if (alarmID != -1){
+                primaryAlarm.let {
+                    cancelAlarm()
+                    ic_alarm_toolbar.visibility = View.GONE
+                    isChange = isChange.or(true)    // changed Alarm
+                    saveAlarmId = alarmID
+                    noteViewModel.alarmId.value = -1
+                    noteViewModel.contentsChange.value = true
+                }
             }
+            bottomSheetDialog.dismiss()
         }
 
         reminderAdapter.setOnItemClickListener {
@@ -1168,13 +1185,14 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
     private fun setAlarm() {
         if (noteID == "-1")
             return
-        alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
+//        alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(requireContext(), AlarmReceiver::class.java)
-        intent.putExtra("id", noteID)
-        intent.putExtra("content", "Check your List!")
-        intent.putExtra("Destination", "2")
-        Log.i("viewmodel", "give noteId is$noteID")
-        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, 0)
+//        intent.putExtra("id", noteID)
+//        intent.putExtra("content", "Check your List!")
+//        intent.putExtra("Destination", "2")
+//        intent.putExtra("alarmId", alarmID)
+//        Log.i("viewmodel", "give noteId is$noteID")
+        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
 //        alarmManager.setRepeating(
 //            AlarmManager.RTC_WAKEUP, calendar.timeInMillis,
@@ -1185,7 +1203,7 @@ class CheckListFragment: Fragment(R.layout.fragment_checklist), RecorderAdapter.
     private fun cancelAlarm() {
         alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(requireContext(), AlarmReceiver::class.java)
-        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, 0)
+        pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID,intent, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
         alarmManager.cancel(pendingIntent)
         Toast.makeText(requireContext(), "آلارم حذف شد.", Toast.LENGTH_SHORT).show()
     }

@@ -1,6 +1,8 @@
 package com.example.noteapp.ui.dialog
 
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Window
 import androidx.appcompat.app.AppCompatDialog
@@ -14,6 +16,7 @@ class RecorderDialog(context: Context, var recorderDialogListener: RecorderDialo
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.recorder_dialog_layout)
 
+        window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         anim_stop.setOnClickListener {
             recorderDialogListener.onStopRecorder()

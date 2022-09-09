@@ -1,5 +1,7 @@
 package com.example.noteapp.ui
 
+import android.content.ComponentName
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,6 +17,7 @@ import com.example.noteapp.R
 import com.example.noteapp.model.data.db.NoteDatabase
 import com.example.noteapp.model.data.repository.AlarmRepository
 import com.example.noteapp.model.data.repository.NoteRepository
+import com.example.noteapp.receiver.AlarmReceiver
 import com.example.noteapp.ui.viewmodel.NoteViewModel
 import com.example.noteapp.ui.viewmodel.NoteViewModelProviderFactory
 import kotlinx.android.synthetic.main.activity_main.*
@@ -28,6 +31,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val receiver = ComponentName(applicationContext, AlarmReceiver::class.java)
+        applicationContext.packageManager?.setComponentEnabledSetting(
+            receiver,
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP
+        )
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO) // * disable night mode even if night mode is enable
         setStatusBarColor()
 

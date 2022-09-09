@@ -1,5 +1,6 @@
 package com.example.noteapp.ui.dialog
 
+import android.app.Activity
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
@@ -23,7 +24,8 @@ import kotlinx.android.synthetic.main.lock_dialog_layout.*
 class LockDialog(
     context: Context,
     val lockDialogListener: LockDialogListener,
-    val state: LockStates
+    val state: LockStates,
+    val isCancelable: Boolean = true
 ) :
     AppCompatDialog(context) {
 
@@ -37,6 +39,12 @@ class LockDialog(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT
         )
+//        this.setCancelable(isCancellable)
+        this.setCanceledOnTouchOutside(isCancelable)
+        this.setOnCancelListener {
+            if (!isCancelable)
+                (context as Activity).finish()
+        }
         window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         when (state) {

@@ -15,7 +15,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.NavDeepLinkBuilder
 import com.example.noteapp.ui.MainActivity
 import com.example.noteapp.R
+import com.example.noteapp.ui.dialog.LockDialog
+import com.example.noteapp.ui.dialog.LockDialogListener
 import com.example.noteapp.utils.DESTINATION
+import com.example.noteapp.utils.LockStates
 
 class AlarmReceiver: BroadcastReceiver() {
 
@@ -25,24 +28,38 @@ class AlarmReceiver: BroadcastReceiver() {
 //        intent!!.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
 //        val pendingIntent = PendingIntent.getActivity(context, 0, i, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 //        val pendingIntent = PendingIntent.getActivity(context, 0, i, 0)
-        val bundle = Bundle()
-        bundle.putString("id",intent.getStringExtra("id"))
-//        val pendingIntent = NavDeepLinkBuilder(context!!)
-//            .setGraph(R.navigation.nav_graph)
-//            .setDestination(if (intent.getStringExtra("Destination") == "1") R.id.noteFragment else R.id.checkListFragment)
-//            .setArguments(bundle)
-//            .createPendingIntent()
+
+//        val bundle = intent.extras
+//        val noteId = intent.getStringExtra("id")
+//        val destination = intent.getStringExtra(("Destination"))
+//        val alarmId = intent.getIntExtra("alarmId",1)
+//
+////        val arr = intent.getStringArrayExtra(Intent.EXTRA_TEXT)
+////        val noteId = arr?.get(0)
+////        val destination = arr?.get(1)
+////        val alarmId = arr?.get(2)?.toInt()
+//        val bundle2 = Bundle()
+//        bundle2.putString("id", noteId)
+//        bundle2.putBoolean("fromNotification", true)
+//        Log.i("ALARM", " note id in receiver: ${noteId.toString()}")
+//        Log.i("ALARM", " destination in receiver: $destination")
+//        Log.i("ALARM", " alarm id in receiver: $alarmId")
+//        Log.i("ALARM", " content in receiver: ${intent.extras?.getString("content")}")
         val pendingIntent = NavDeepLinkBuilder(context!!)
             .setGraph(R.navigation.nav_graph)
-            .setDestination(if (intent.getStringExtra("Destination") == "1") R.id.noteFragment else R.id.checkListFragment)
-            .setArguments(bundle)
-            .createTaskStackBuilder()
-            .getPendingIntent(intent.getIntExtra("alarmId", 1), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            .setDestination(R.id.mainFragment)
+            .createPendingIntent()
+
+//        val pendingIntent = NavDeepLinkBuilder(context!!)
+//            .setGraph(R.navigation.nav_graph)
+//            .setDestination(if (destination == "1") R.id.noteFragment else R.id.checkListFragment)
+//            .setArguments(bundle2)
+//            .createTaskStackBuilder()
+//            .getPendingIntent(alarmId!!, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
 
         val builder = NotificationCompat.Builder(context, "notify")
             .setSmallIcon(R.drawable.ic_note)
             .setContentTitle("Note")
-            .setContentText(intent.getStringExtra("content"))
             .setAutoCancel(true)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

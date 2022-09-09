@@ -70,7 +70,7 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.Lifecycle
 import kotlinx.coroutines.*
 import java.lang.Runnable
-
+import android.content.Intent.getIntent
 
 class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderCallBack {
 
@@ -83,6 +83,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     private var colorIndex = 1
     private var noteID: String = "-1"
     private var alarmID: Int = -1
+    private var saveAlarmId: Int = -1
     private var isChange = false
     private var isAlarmChanged = false
     private var isLock = false
@@ -121,9 +122,11 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         if (args.id == "-1")
             noteID = UUID.randomUUID().toString()
         Toast.makeText(requireContext(), noteID.toString(), Toast.LENGTH_SHORT).show()
-        Log.i("time", "primary noteId is $noteID")
         primaryText = et_todo.text.toString()
-        requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+        requireActivity().window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+//        val bundle: Bundle = requireArguments()
+//        val cameFromNotification = bundle.getBoolean("fromNotification",false)
+//        Log.i("fromNotification", cameFromNotification.toString())
 
         if (args.id != "-1") {
             noteID = args.id
@@ -147,6 +150,41 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 }
             })
         }
+
+//        if (cameFromNotification && isLock) {
+//            LockDialog(
+//                requireContext(), object : LockDialogListener {
+//                    override fun onCreateLock(password: String) {
+//                    }
+//
+//                    override fun onChangeLock(password: String) {
+//                    }
+//
+//                    override fun onAccessNote() {
+//                    }
+//
+//                    override fun onRemoveLock() {
+//                    }
+//
+//                }, LockStates.EnterNote, false
+//            ).show()
+//        }
+
+        imageAdapter = ImageAdapter { image, pos ->
+            if (pos == -1) {
+                ImageDialog(
+                    requireContext(),
+                    image.originalBitmap
+                ).show()
+            } else {
+                val file = File(image.contentUri)
+                file.delete()
+                Log.i("result", image.contentUri)
+                imageList.remove(image)
+                noteViewModel.imageList.postValue(imageList)
+            }
+        }
+
         val requestPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
         ) { permissions ->
@@ -192,21 +230,6 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
 
         updateOrRequestPermission()
-
-        imageAdapter = ImageAdapter { image, pos ->
-            if (pos == -1) {
-                ImageDialog(
-                    requireContext(),
-                    image.originalBitmap
-                ).show()
-            } else {
-                val file = File(image.contentUri)
-                file.delete()
-                Log.i("result", image.contentUri)
-                imageList.remove(image)
-                noteViewModel.imageList.postValue(imageList)
-            }
-        }
 
         hideKeyboard()
         noteViewModel.alarmId.observe(viewLifecycleOwner, Observer {
@@ -683,6 +706,7 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
     }
 
     private suspend fun getAllImages() {
+
         rv_image.layoutManager = LinearLayoutManager(
             requireContext(),
             LinearLayoutManager.HORIZONTAL, false
@@ -901,14 +925,16 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                     val tempName = fileName.substring(0, fileName.length - 4)
                     nameArray.add(tempName.toInt())
                 }
-                nameArray.sort()
-                recordNumber = nameArray[nameArray.lastIndex]
-                for (i in 0 until nameArray.size) {
-                    val recordingUri =
-                        root?.absolutePath + "/NoteApplication/${noteID}/Audios/" + "${nameArray[i]}.mp3"
-                    recordingList.add(Recording(recordingUri, nameArray[i].toString(), false))
+                if (nameArray.isNotEmpty()) {
+                    nameArray.sort()
+                    recordNumber = nameArray[nameArray.lastIndex]
+                    for (i in 0 until nameArray.size) {
+                        val recordingUri =
+                            root?.absolutePath + "/NoteApplication/${noteID}/Audios/" + "${nameArray[i]}.mp3"
+                        recordingList.add(Recording(recordingUri, nameArray[i].toString(), false))
+                    }
+                    noteViewModel.recordingList.postValue(recordingList)
                 }
-                noteViewModel.recordingList.postValue(recordingList)
             }
         }
     }
@@ -931,25 +957,34 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
     }
 
+    // set Alarm Receiver
     private fun setAlarm() {
         if (noteID == "-1")
             return
             alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(requireContext(), AlarmReceiver::class.java)
-            intent.putExtra("id", noteID)
-            intent.putExtra("content", et_todo.text.toString())
-            intent.putExtra("Destination", "1")
-            intent.putExtra("alarmId", alarmID)
-            Log.i("viewmodel", "give noteId is$noteID")
+//            intent.putExtra("id", noteID)
+////            intent.putExtra("content", et_todo.text.toString())
+//            intent.putExtra("Destination", "1")
+//            intent.putExtra("alarmId", alarmID)
+//            intent.putExtra(Intent.EXTRA_TEXT, arrayOf(noteID, "1", alarmID.toString()))
+//            val bundle = Bundle()
+//            bundle.putString("id", noteID)
+//            bundle.putString("Destination", "1")
+//            bundle.putInt("alarmId", alarmID)
+//            intent.putExtras(bundle)
+//            Log.i("ALARM", "note id in setAlarm: $noteID")
+//            Log.i("ALARM", "alarm id in setAlarm: $alarmID")
+//            Log.i("ALARM", "content in setAlarm: ${et_todo.text}")
             pendingIntent = PendingIntent.getBroadcast(requireContext(), alarmID, intent, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-//        alarmManager.setRepeating(
-//            AlarmManager.RTC_WAKEUP, calendar.timeInMillis,
-//            AlarmManager.INTERVAL_DAY, pendingIntent
-//        )
-//        }
+//            alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+        alarmManager.setRepeating(
+            AlarmManager.RTC_WAKEUP, calendar.timeInMillis,
+            AlarmManager.INTERVAL_DAY, pendingIntent
+        )
     }
 
+    // cancel Alarm Receiver
     private fun cancelAlarm() {
         alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(requireContext(), AlarmReceiver::class.java)
@@ -995,7 +1030,10 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         noteViewModel.getAlarmFromRoom(id).observe(viewLifecycleOwner, Observer { alarm ->
             alarm?.let {
                 primaryAlarm = alarm
-                alarmID = alarm.id
+//                alarmID = alarm.id
+                saveAlarmId = alarm.id
+                Log.i("primary(get)", "${primaryAlarm.year}, ${primaryAlarm.month}, ${primaryAlarm.day}, ${primaryAlarm.hour}, ${primaryAlarm.minute}")
+                noteViewModel.alarmId.postValue(alarm.id)
                 setAlarmIcon()
             }
         })
@@ -1013,21 +1051,11 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
             Log.i("screen", "open")
             val persianCalendar = PersianCalendar()
             var note: Note? = null
-            note = if (noteID == "-1") {
-                Log.i("viewmodel", "if 1")
-                Note(
+            note = Note(
                     noteID, text, colorIndex, alarmID,
                     persianCalendar.year, persianCalendar.month, persianCalendar.dayOfMonth,
                     persianCalendar.hour, persianCalendar.minute, isLock
                 )
-            } else {
-                Log.i("viewmodel", "if 2")
-                Note(
-                    noteID, text, colorIndex, alarmID,
-                    persianCalendar.year, persianCalendar.month, persianCalendar.dayOfMonth,
-                    persianCalendar.hour, persianCalendar.minute, isLock
-                )
-            }
 
             if (alarmID != -1 && isAlarmChanged)
                 setAlarm()
@@ -1129,12 +1157,10 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         reminderAdapter.differ.submitList(date)
         bottomSheetDialog.tv_year_reminder.text = date[0].Year
         bottomSheetDialog.make_alarm.setOnClickListener {
-
+            alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                alarmManager = requireContext().getSystemService(Context.ALARM_SERVICE) as AlarmManager
                 when {
                     alarmManager.canScheduleExactAlarms() -> {
-
                     }
                     else -> {
                         Intent().apply {
@@ -1184,19 +1210,24 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
                 )
                 calendar.timeInMillis
                 var alarm: Alarm? = null
-                alarm = if (alarmID == -1) {
+                alarm = if (alarmID == -1 && saveAlarmId == -1) {
+                    Log.i("primary", "alarmID == -1")
                     Alarm(
                         0, alarmDate.Year.toInt(), alarmDate.Month, alarmDate.Day.toInt(),
                         alarmHour, alarmMinute
                     )
                 } else {
+                    Log.i("primary", "alarmID != -1")
                     Alarm(
-                        alarmID, alarmDate.Year.toInt(), alarmDate.Month, alarmDate.Day.toInt(),
+                        saveAlarmId, alarmDate.Year.toInt(), alarmDate.Month, alarmDate.Day.toInt(),
                         alarmHour, alarmMinute
                     )
                 }
                 Log.i("viewmodel", "created alarmId is $alarmID")
                 primaryAlarm = alarm
+                Log.i("primary", "${primaryAlarm.year}, ${primaryAlarm.month}, ${primaryAlarm.day}, ${primaryAlarm.hour}, ${primaryAlarm.minute}")
+                Log.i("primary alarm", "${alarm.year}, ${alarm.month}, ${alarm.day}, ${alarm.hour}, ${alarm.minute}")
+                alarmID = alarm.id
                 noteViewModel.saveAlarm(alarm)
                 isAlarmChanged = true
                 isChange = isChange.or(true)    // changed Alarm
@@ -1217,13 +1248,16 @@ class NoteFragment : Fragment(R.layout.fragment_note), RecorderAdapter.RecorderC
         }
 
         bottomSheetDialog.remove_alarm.setOnClickListener {
-            primaryAlarm.let {
-                cancelAlarm()
-                ic_alarm_toolbar.visibility = View.GONE
-                isChange = isChange.or(true)    // changed Alarm
-                noteViewModel.alarmId.value = -1
-                bottomSheetDialog.dismiss()
+            if (alarmID != -1){
+                primaryAlarm.let {
+                    cancelAlarm()
+                    ic_alarm_toolbar.visibility = View.GONE
+                    isChange = isChange.or(true)    // changed Alarm
+                    saveAlarmId = alarmID
+                    noteViewModel.alarmId.value = -1
+                }
             }
+            bottomSheetDialog.dismiss()
         }
 
         reminderAdapter.setOnItemClickListener {

@@ -4,15 +4,16 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:background="@drawable/dialog_bg"
     android:layout_height="wrap_content">
 
     <TextView
         android:id="@+id/tv_recording"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Recording"
+        android:text="در حال ضبط صدا"
         android:textColor="#414141"
-        android:textSize="30dp"
+        android:textSize="22dp"
         android:layout_marginTop="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -21,7 +22,7 @@
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/anim_recording"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="110dp"
         app:layout_constraintWidth_percent="0.4"
         app:layout_constraintDimensionRatio="1:1"
         app:lottie_url="REPLACE_JSON_URL"
@@ -31,23 +32,23 @@
         app:layout_constraintTop_toBottomOf="@+id/tv_recording"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="6dp"
         app:lottie_colorFilter="@color/blue_text"/>
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/anim_stop"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
+        android:layout_width="70dp"
+        android:layout_height="70dp"
         app:layout_constraintWidth_percent="0.4"
         app:layout_constraintDimensionRatio="1:1"
         app:lottie_url="REPLACE_JSON_URL"
         app:lottie_autoPlay="true"
-        app:lottie_loop="true"
+        app:lottie_loop="false"
         app:lottie_rawRes="@raw/stop_anim"
         app:layout_constraintTop_toBottomOf="@+id/anim_recording"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="8dp"
         app:lottie_colorFilter="@color/blue_text"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
