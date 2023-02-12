@@ -1,3 +1,4 @@
 # noteApp
 
-![Image 1](https://github.com/codewithminer/noteApp/images/img1.jpg?raw=true)
+![alt text](https://github.com/codewithminer/noteApp/blob/master/img1.jpg?raw=true)
+
